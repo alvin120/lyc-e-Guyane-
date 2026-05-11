@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduGuyane — Plateforme Lycée</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header" id="header">
+    <div class="header-inner">
+        <div class="logo">
+            <span class="logo-icon">🌿</span>
+            <span class="logo-text">EduGuyane</span>
+        </div>
+        <nav class="nav" id="nav">
+            <a href="#" class="nav-link active" data-view="accueil">Accueil</a>
+            <a href="#" class="nav-link" data-view="cours">Cours</a>
+            <a href="#" class="nav-link" data-view="quiz">Quiz</a>
+            <a href="#" class="nav-link" data-view="progression">Progression</a>
+            <a href="#" class="nav-link" data-view="forum">Forum</a>
+        </nav>
+        <div class="header-auth" id="header-auth">
+            <!-- Non connecté -->
+            <button class="btn-login" id="btn-login">Se connecter</button>
+            <!-- Connecté -->
+            <div class="user-menu hidden" id="user-menu">
+                <button class="user-btn" id="user-btn">
+                    <span id="user-avatar-hdr">🎓</span>
+                    <span id="user-name-hdr">...</span>
+                    <span class="user-arrow">▾</span>
+                </button>
+                <div class="user-dropdown hidden" id="user-dropdown">
+                    <a href="#" class="ud-item" data-nav="profil">👤 Mon profil</a>
+                    <a href="#" class="ud-item ud-admin hidden" id="ud-admin-link" data-nav="admin">🛠️ Panel Admin</a>
+                    <div class="ud-divider"></div>
+                    <button class="ud-item ud-logout" id="btn-logout">🚪 Se déconnecter</button>
+                </div>
+            </div>
+        </div>
+        <button class="burger" id="burger" aria-label="Menu">
+            <span></span><span></span><span></span>
+        </button>
+    </div>
+</header>
+
+<!-- MODAL AUTH -->
+<div class="modal-overlay hidden" id="auth-modal">
+    <div class="modal auth-modal">
+        <div class="modal-header auth-modal-header">
+            <div class="auth-tabs-header">
+                <button class="auth-tab-btn active" data-atab="login">Connexion</button>
+                <button class="auth-tab-btn" data-atab="register">Inscription</button>
+            </div>
+            <button class="modal-close" id="close-auth-modal">✕</button>
+        </div>
+        <!-- Connexion -->
+        <div class="modal-body" id="auth-login-form">
+            <div class="auth-hint">
+                💡 <strong>Comptes de test :</strong><br>
+                Admin : <code>admin</code> / <code>Admin123!</code><br>
+                Élève : <code>demo</code> / <code>Demo123!</code>
+            </div>
+            <div class="form-group">
+                <label>Nom d'utilisateur</label>
+                <input type="text" id="login-username" placeholder="Ton pseudo" autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label>Mot de passe</label>
+                <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
+            </div>
+            <p class="auth-error hidden" id="login-error">Identifiants incorrects.</p>
+            <button class="btn-primary" id="submit-login" style="width:100%">Se connecter</button>
+        </div>
+        <!-- Inscription -->
+        <div class="modal-body hidden" id="auth-register-form">
+            <div class="form-group">
+                <label>Nom d'utilisateur <span class="label-hint">(min. 3 caractères)</span></label>
+                <input type="text" id="reg-username" placeholder="Ex: Alex_973" maxlength="20">
+            </div>
+            <div class="form-group">
+                <label>Prénom / Surnom</label>
+                <input type="text" id="reg-name" placeholder="Comment veux-tu t'appeler ?" maxlength="30">
+            </div>
+            <div class="form-group">
+                <label>Choisis un avatar</label>
+                <div class="avatar-grid" id="avatar-grid-reg"></div>
+            </div>
+            <div class="form-group">
+                <label>Mot de passe <span class="label-hint">(min. 6 caractères)</span></label>
+                <input type="password" id="reg-password" placeholder="••••••••">
+            </div>
+            <p class="auth-error hidden" id="reg-error"></p>
+            <button class="btn-primary" id="submit-register" style="width:100%">Créer mon compte</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============ VUE : ACCUEIL ============ -->
+<main id="app">
+
+<section class="view active" id="view-accueil">
+    <div class="hero">
+        <div class="hero-content">
+            <span class="hero-badge">🇬🇫 Lycée en Guyane</span>
+            <h1>Apprends mieux,<br><span class="gradient-text">réussis ensemble.</span></h1>
+            <p class="hero-sub">Des cours clairs, des quiz interactifs et une communauté pour t'accompagner tout au long de l'année scolaire.</p>
+            <div class="hero-actions">
+                <button class="btn-primary" data-nav="cours">Voir les cours</button>
+                <button class="btn-secondary" data-nav="quiz">Tester mes connaissances</button>
+            </div>
+        </div>
+        <div class="hero-visual">
+            <div class="hero-card">
+                <div class="hc-row"><span class="hc-dot green"></span> Mathématiques</div>
+                <div class="hc-row"><span class="hc-dot blue"></span> Histoire-Géo</div>
+                <div class="hc-row"><span class="hc-dot orange"></span> SVT</div>
+                <div class="hc-row"><span class="hc-dot purple"></span> Français</div>
+                <div class="hc-stat">
+                    <span>🏆 Quiz complétés</span>
+                    <strong id="hero-quiz-count">0</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2 class="section-title">Les matières</h2>
+        <p class="section-sub">Sélectionne une matière pour accéder aux cours</p>
+        <div class="subjects-grid">
+            <div class="subject-card" data-subject="maths" data-nav="cours">
+                <div class="sc-icon">📐</div>
+                <h3>Mathématiques</h3>
+                <p>Algèbre, géométrie, fonctions, probabilités</p>
+                <span class="sc-badge">12 leçons</span>
+            </div>
+            <div class="subject-card" data-subject="francais" data-nav="cours">
+                <div class="sc-icon">📖</div>
+                <h3>Français</h3>
+                <p>Littérature, expression écrite, grammaire</p>
+                <span class="sc-badge">10 leçons</span>
+            </div>
+            <div class="subject-card" data-subject="histgeo" data-nav="cours">
+                <div class="sc-icon">🗺️</div>
+                <h3>Histoire-Géographie</h3>
+                <p>Histoire mondiale & géographie de la Guyane</p>
+                <span class="sc-badge">8 leçons</span>
+            </div>
+            <div class="subject-card" data-subject="svt" data-nav="cours">
+                <div class="sc-icon">🌿</div>
+                <h3>SVT</h3>
+                <p>Biodiversité amazonienne, corps humain, écologie</p>
+                <span class="sc-badge">9 leçons</span>
+            </div>
+            <div class="subject-card" data-subject="physchim" data-nav="cours">
+                <div class="sc-icon">⚗️</div>
+                <h3>Physique-Chimie</h3>
+                <p>Mécanique, électricité, chimie organique</p>
+                <span class="sc-badge">11 leçons</span>
+            </div>
+            <div class="subject-card" data-subject="anglais" data-nav="cours">
+                <div class="sc-icon">🌍</div>
+                <h3>Anglais</h3>
+                <p>Expression orale, grammaire, civilisation</p>
+                <span class="sc-badge">8 leçons</span>
+            </div>
+            <div class="subject-card" data-subject="ses" data-nav="cours">
+                <div class="sc-icon">📊</div>
+                <h3>SES</h3>
+                <p>Économie, sociologie, sciences politiques</p>
+                <span class="sc-badge">7 leçons</span>
+            </div>
+            <div class="subject-card" data-subject="philo" data-nav="cours">
+                <div class="sc-icon">🤔</div>
+                <h3>Philosophie</h3>
+                <p>Les grandes notions, les auteurs majeurs</p>
+                <span class="sc-badge">6 leçons</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="section stats-section">
+        <div class="stat-box">
+            <span class="stat-num" id="stat-cours">8</span>
+            <span class="stat-label">Matières disponibles</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-num">71</span>
+            <span class="stat-label">Leçons au total</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-num" id="stat-quiz-total">30</span>
+            <span class="stat-label">Quiz interactifs</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-num" id="stat-progress">0%</span>
+            <span class="stat-label">Ta progression</span>
+        </div>
+    </div>
+</section>
+
+<!-- ============ VUE : COURS ============ -->
+<section class="view" id="view-cours">
+    <div class="page-header">
+        <h1>Cours</h1>
+        <p>Choisis une matière et explore les leçons</p>
+    </div>
+
+    <div class="cours-layout">
+        <aside class="cours-sidebar">
+            <div class="sidebar-title">Matières</div>
+            <button class="sidebar-item active" data-filter="maths">📐 Mathématiques</button>
+            <button class="sidebar-item" data-filter="francais">📖 Français</button>
+            <button class="sidebar-item" data-filter="histgeo">🗺️ Histoire-Géo</button>
+            <button class="sidebar-item" data-filter="svt">🌿 SVT</button>
+            <button class="sidebar-item" data-filter="physchim">⚗️ Physique-Chimie</button>
+            <button class="sidebar-item" data-filter="anglais">🌍 Anglais</button>
+            <button class="sidebar-item" data-filter="ses">📊 SES</button>
+            <button class="sidebar-item" data-filter="philo">🤔 Philosophie</button>
+        </aside>
+
+        <div class="cours-main">
+            <div class="cours-list" id="cours-list">
+                <!-- JS generated -->
+            </div>
+            <div class="lesson-detail hidden" id="lesson-detail">
+                <button class="back-btn" id="back-to-list">← Retour aux leçons</button>
+                <div id="lesson-content"></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ VUE : QUIZ ============ -->
+<section class="view" id="view-quiz">
+    <div class="page-header">
+        <h1>Quiz</h1>
+        <p>Teste tes connaissances sur chaque matière</p>
+    </div>
+
+    <div id="quiz-home">
+        <div class="quiz-grid" id="quiz-grid">
+            <!-- JS generated -->
+        </div>
+    </div>
+
+    <div id="quiz-runner" class="hidden">
+        <div class="quiz-card">
+            <div class="quiz-top">
+                <span class="quiz-subject-label" id="quiz-subject-label"></span>
+                <span class="quiz-counter" id="quiz-counter">1 / 5</span>
+            </div>
+            <div class="quiz-progress-bar"><div id="quiz-bar"></div></div>
+            <div id="quiz-visual" class="hidden"></div>
+            <p class="quiz-question" id="quiz-question"></p>
+            <div class="quiz-options" id="quiz-options"></div>
+            <div class="quiz-feedback hidden" id="quiz-feedback"></div>
+            <button class="btn-primary btn-quiz-next" type="button" id="quiz-next">Question suivante →</button>
+        </div>
+    </div>
+
+    <div id="quiz-result" class="hidden">
+        <div class="result-card">
+            <div class="result-emoji" id="result-emoji">🎉</div>
+            <h2 id="result-title">Bravo !</h2>
+            <p id="result-score"></p>
+            <div class="result-details" id="result-details"></div>
+            <div class="result-actions">
+                <button class="btn-primary" type="button" id="retry-quiz">Recommencer</button>
+                <button class="btn-secondary" type="button" id="other-quiz">Autres quiz</button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ VUE : PROGRESSION ============ -->
+<section class="view" id="view-progression">
+    <div class="page-header">
+        <h1>Ma progression</h1>
+        <p>Suis tes résultats et tes accomplissements</p>
+    </div>
+
+    <div class="progress-dashboard">
+        <div class="prog-overview">
+            <div class="prog-circle-wrap">
+                <svg class="prog-circle" viewBox="0 0 120 120">
+                    <circle cx="60" cy="60" r="50" fill="none" stroke="#e5e7eb" stroke-width="12"/>
+                    <circle cx="60" cy="60" r="50" fill="none" stroke="url(#progGrad)" stroke-width="12"
+                        stroke-linecap="round" stroke-dasharray="314"
+                        id="prog-arc" stroke-dashoffset="314" transform="rotate(-90 60 60)"/>
+                    <defs>
+                        <linearGradient id="progGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="#22c55e"/>
+                            <stop offset="100%" stop-color="#16a34a"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <div class="prog-circle-text">
+                    <span id="prog-pct">0%</span>
+                    <small>complété</small>
+                </div>
+            </div>
+            <div class="prog-stats">
+                <div class="ps-item">
+                    <span class="ps-icon">📝</span>
+                    <div>
+                        <strong id="ps-quiz-done">0</strong>
+                        <small>Quiz terminés</small>
+                    </div>
+                </div>
+                <div class="ps-item">
+                    <span class="ps-icon">✅</span>
+                    <div>
+                        <strong id="ps-correct">0</strong>
+                        <small>Bonnes réponses</small>
+                    </div>
+                </div>
+                <div class="ps-item">
+                    <span class="ps-icon">🎯</span>
+                    <div>
+                        <strong id="ps-accuracy">—</strong>
+                        <small>Précision moyenne</small>
+                    </div>
+                </div>
+                <div class="ps-item">
+                    <span class="ps-icon">🏆</span>
+                    <div>
+                        <strong id="ps-best">—</strong>
+                        <small>Meilleure matière</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h3 class="prog-section-title">Résultats par matière</h3>
+        <div class="subject-bars" id="subject-bars">
+            <!-- JS generated -->
+        </div>
+
+        <h3 class="prog-section-title">Badges obtenus</h3>
+        <div class="badges-grid" id="badges-grid">
+            <!-- JS generated -->
+        </div>
+    </div>
+</section>
+
+<!-- ============ VUE : FORUM ============ -->
+<section class="view" id="view-forum">
+    <div class="page-header">
+        <h1>Forum d'entraide</h1>
+        <p>Pose tes questions et aide tes camarades</p>
+    </div>
+
+    <div class="forum-layout">
+        <div class="forum-controls">
+            <input type="text" class="forum-search" id="forum-search" placeholder="🔍 Rechercher une discussion...">
+            <button class="btn-primary" type="button" id="new-post-btn">+ Nouvelle discussion</button>
+        </div>
+
+        <div class="forum-categories">
+            <button class="fc-btn active" type="button" data-cat="all">Tous</button>
+            <button class="fc-btn" type="button" data-cat="maths">📐 Maths</button>
+            <button class="fc-btn" type="button" data-cat="francais">📖 Français</button>
+            <button class="fc-btn" type="button" data-cat="histgeo">🗺️ Histoire-Géo</button>
+            <button class="fc-btn" type="button" data-cat="svt">🌿 SVT</button>
+            <button class="fc-btn" type="button" data-cat="autre">💬 Autre</button>
+        </div>
+
+        <div class="forum-posts" id="forum-posts">
+            <!-- JS generated -->
+        </div>
+    </div>
+
+    <!-- Modal nouveau post -->
+    <div class="modal-overlay hidden" id="post-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Nouvelle discussion</h3>
+                <button class="modal-close" type="button" id="close-modal">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Ton pseudo</label>
+                    <input type="text" id="post-author" placeholder="Ex: Alex974" maxlength="30">
+                </div>
+                <div class="form-group">
+                    <label>Matière</label>
+                    <select id="post-cat" aria-label="Matière de la discussion">
+                        <option value="maths">📐 Mathématiques</option>
+                        <option value="francais">📖 Français</option>
+                        <option value="histgeo">🗺️ Histoire-Géographie</option>
+                        <option value="svt">🌿 SVT</option>
+                        <option value="physchim">⚗️ Physique-Chimie</option>
+                        <option value="anglais">🌍 Anglais</option>
+                        <option value="autre">💬 Autre</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Titre de ta question</label>
+                    <input type="text" id="post-title" placeholder="Ex: Je comprends pas les dérivées..." maxlength="100">
+                </div>
+                <div class="form-group">
+                    <label>Message</label>
+                    <textarea id="post-body" rows="4" placeholder="Décris ton problème en détail..." maxlength="500"></textarea>
+                </div>
+                <button class="btn-primary btn-full" type="button" id="submit-post">Publier la discussion</button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ VUE : PROFIL ============ -->
+<section class="view" id="view-profil">
+    <div class="page-header">
+        <h1>Mon profil</h1>
+        <p>Gère ton compte et suis ta progression</p>
+    </div>
+    <div class="profile-layout">
+        <div class="profile-card">
+            <div class="profile-avatar-big" id="profile-avatar-display">🎓</div>
+            <h2 id="profile-display-name">Élève</h2>
+            <p class="profile-username" id="profile-username-display">@username</p>
+            <span class="profile-role-badge" id="profile-role-badge">Élève</span>
+            <div class="profile-mini-stats">
+                <div class="pms-item">
+                    <strong id="pm-quiz">0</strong>
+                    <small>Quiz faits</small>
+                </div>
+                <div class="pms-item">
+                    <strong id="pm-lessons">0</strong>
+                    <small>Leçons lues</small>
+                </div>
+                <div class="pms-item">
+                    <strong id="pm-score">—</strong>
+                    <small>Précision</small>
+                </div>
+            </div>
+        </div>
+        <div class="profile-edit-card">
+            <h3>Modifier mon profil</h3>
+            <div class="form-group">
+                <label>Prénom / Surnom</label>
+                <input type="text" id="edit-name" placeholder="Ton prénom" maxlength="30">
+            </div>
+            <div class="form-group">
+                <label>Avatar</label>
+                <div class="avatar-grid" id="avatar-grid-profile"></div>
+            </div>
+            <div class="form-group">
+                <label>Nouveau mot de passe <span class="label-hint">(laisser vide pour ne pas changer)</span></label>
+                <input type="password" id="edit-password" placeholder="Nouveau mot de passe">
+            </div>
+            <p class="auth-success hidden" id="edit-success">✅ Profil mis à jour !</p>
+            <button class="btn-primary" id="save-profile">Sauvegarder les modifications</button>
+        </div>
+    </div>
+</section>
+
+<!-- ============ VUE : ADMIN ============ -->
+<section class="view" id="view-admin">
+    <div class="page-header">
+        <h1>🛠️ Panel Admin</h1>
+        <p>Gestion de la plateforme EduGuyane</p>
+    </div>
+    <div class="admin-tabs-bar">
+        <button class="admin-tab active" data-atab="overview">📊 Vue d'ensemble</button>
+        <button class="admin-tab" data-atab="users">👥 Utilisateurs</button>
+        <button class="admin-tab" data-atab="forum">💬 Modération Forum</button>
+    </div>
+    <div id="admin-overview" class="admin-panel active"></div>
+    <div id="admin-users"   class="admin-panel"></div>
+    <div id="admin-forum"   class="admin-panel"></div>
+</section>
+
+</main>
+
+<script src="auth.js"></script>
+<script src="animations.js"></script>
+<script src="quiz-visuals.js"></script>
+<script src="data.js"></script>
+<script src="dynamics.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
