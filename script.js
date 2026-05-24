@@ -75,6 +75,7 @@ function navigateTo(view) {
     if (view === "accueil")     updateHeroStats();
     if (view === "profil")      renderProfile();
     if (view === "admin")       renderAdmin();
+    if (view === "exercices")   renderExercicesList();
 }
 
 function closeNav() {
@@ -91,16 +92,28 @@ function renderHeaderAuth() {
     const userMenu  = document.getElementById("user-menu");
     const adminLink = document.getElementById("ud-admin-link");
 
+    const addCourseBtn = document.getElementById("btn-add-course-sidebar");
     if (user) {
         loginBtn.classList.add("hidden");
         userMenu.classList.remove("hidden");
         document.getElementById("user-avatar-hdr").textContent = user.avatar;
         document.getElementById("user-name-hdr").textContent   = user.name;
-        if (user.role === "admin") adminLink.classList.remove("hidden");
-        else                       adminLink.classList.add("hidden");
+        const addExoBtn = document.getElementById("btn-add-exo-sidebar");
+        if (user.role === "admin") {
+            adminLink.classList.remove("hidden");
+            if (addCourseBtn) addCourseBtn.classList.remove("hidden");
+            if (addExoBtn)    addExoBtn.classList.remove("hidden");
+        } else {
+            adminLink.classList.add("hidden");
+            if (addCourseBtn) addCourseBtn.classList.add("hidden");
+            if (addExoBtn)    addExoBtn.classList.add("hidden");
+        }
     } else {
         loginBtn.classList.remove("hidden");
         userMenu.classList.add("hidden");
+        if (addCourseBtn) addCourseBtn.classList.add("hidden");
+        const addExoBtn = document.getElementById("btn-add-exo-sidebar");
+        if (addExoBtn) addExoBtn.classList.add("hidden");
     }
 }
 
@@ -255,13 +268,17 @@ function saveProfile() {
 // ============================================================
 // COURS
 // ============================================================
+function getAllCourses() {
+    return [...COURSES, ...getCustomCourses()];
+}
+
 function renderCoursList() {
     const list   = document.getElementById("cours-list");
     const detail = document.getElementById("lesson-detail");
     list.classList.remove("hidden");
     detail.classList.add("hidden");
 
-    const lessons = COURSES.filter(c => c.subject === currentSubject);
+    const lessons = getAllCourses().filter(c => c.subject === currentSubject);
     list.innerHTML = lessons.map(l => `
         <div class="lesson-card ${state.lessonsRead[l.id] ? "read" : ""}" data-id="${l.id}">
             <div class="lc-left">
@@ -288,7 +305,7 @@ function renderCoursList() {
 }
 
 function openLesson(id) {
-    const lesson = COURSES.find(c => c.id === id);
+    const lesson = getAllCourses().find(c => c.id === id);
     if (!lesson) return;
     state.lessonsRead[lesson.id] = true;
     saveState();
@@ -608,9 +625,11 @@ function switchAdminTab(tab) {
     document.querySelectorAll(".admin-panel").forEach(p => p.classList.remove("active"));
     document.getElementById(`admin-${tab}`).classList.add("active");
 
-    if (tab === "overview") renderAdminOverview();
-    if (tab === "users")    renderAdminUsers();
-    if (tab === "forum")    renderAdminForum();
+    if (tab === "overview")  renderAdminOverview();
+    if (tab === "users")     renderAdminUsers();
+    if (tab === "forum")     renderAdminForum();
+    if (tab === "courses")   renderAdminCourses();
+    if (tab === "exercices") renderAdminExercices();
 }
 
 function renderAdminOverview() {
@@ -642,7 +661,7 @@ function renderAdminOverview() {
         </div>
         <div class="admin-stat-card">
             <div class="asc-icon">📚</div>
-            <div class="asc-val">${COURSES.length}</div>
+            <div class="asc-val">${getAllCourses().length}</div>
             <div class="asc-label">Leçons disponibles</div>
         </div>
         <div class="admin-stat-card">
@@ -684,7 +703,7 @@ function renderAdminUsers() {
                     <td><span class="role-badge ${u.role === "admin" ? "admin" : ""}">${u.role === "admin" ? "🛠️ Admin" : "🎓 Élève"}</span></td>
                     <td>${u.quizCount} / ${QUIZZES.length}</td>
                     <td>${u.accuracy !== null ? u.accuracy + "%" : "—"}</td>
-                    <td>${u.lessonsRead} / ${COURSES.length}</td>
+                    <td>${u.lessonsRead} / ${getAllCourses().length}</td>
                     <td>${u.createdAt}</td>
                     <td>
                         ${u.id !== me.id ? `
@@ -747,6 +766,292 @@ function renderAdminForum() {
             }
         });
     });
+}
+
+// ============================================================
+// ADMIN — COURS
+// ============================================================
+function renderAdminCourses() {
+    const el = document.getElementById("admin-courses");
+    const custom = getCustomCourses();
+    el.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h3 style="font-size:1.05rem;font-weight:700">Cours disponibles (${getAllCourses().length})</h3>
+        <button class="btn-primary" type="button" id="open-new-course">+ Nouveau cours</button>
+    </div>
+    <div class="admin-courses-list">
+        ${getAllCourses().map(c => {
+            const isCustom = custom.some(cc => cc.id === c.id);
+            return `
+        <div class="admin-course-row">
+            <div class="acr-info">
+                <span class="lc-icon">${SUBJECTS[c.subject] ? SUBJECTS[c.subject].icon : "📚"}</span>
+                <div>
+                    <strong>${escapeHtml(c.title)}</strong>
+                    <small>${c.level || ""} · ${c.duration || ""}</small>
+                </div>
+            </div>
+            <div class="acr-actions">
+                ${isCustom ? `
+                <button class="btn-sm acr-edit" data-cid="${c.id}">✏️ Modifier</button>
+                <button class="btn-sm acr-del" data-cid="${c.id}" style="background:#fef2f2;color:#ef4444">🗑️ Suppr.</button>
+                ` : `<span style="color:#94a3b8;font-size:0.8rem">cours de base</span>`}
+            </div>
+        </div>`;
+        }).join("")}
+    </div>`;
+
+    el.querySelector("#open-new-course").addEventListener("click", () => openCourseModal(null));
+    el.querySelectorAll(".acr-edit").forEach(btn => {
+        btn.addEventListener("click", () => openCourseModal(btn.dataset.cid));
+    });
+    el.querySelectorAll(".acr-del").forEach(btn => {
+        btn.addEventListener("click", () => {
+            deleteCustomCourse(btn.dataset.cid);
+            renderAdminCourses();
+            renderAdminOverview();
+            showToast("Cours supprimé.", "info");
+        });
+    });
+}
+
+function openCourseModal(id) {
+    const modal = document.getElementById("course-modal");
+    const titleEl = document.getElementById("course-modal-title");
+    document.getElementById("cm-id").value = "";
+    document.getElementById("cm-title").value = "";
+    document.getElementById("cm-summary").value = "";
+    document.getElementById("cm-intro").value = "";
+    document.getElementById("cm-formula").value = "";
+    document.getElementById("cm-tip").value = "";
+    document.getElementById("cm-error").classList.add("hidden");
+    document.querySelectorAll(".cm-sec-title").forEach(el => el.value = "");
+    document.querySelectorAll(".cm-sec-body").forEach(el => el.value = "");
+
+    if (id) {
+        const course = getCustomCourses().find(c => c.id === id);
+        if (!course) return;
+        titleEl.textContent = "Modifier le cours";
+        document.getElementById("cm-id").value      = course.id;
+        document.getElementById("cm-subject").value = course.subject;
+        document.getElementById("cm-level").value   = course.level || "Seconde";
+        document.getElementById("cm-duration").value= course.duration || "";
+        document.getElementById("cm-title").value   = course.title;
+        document.getElementById("cm-summary").value = course.summary || "";
+        if (course._raw) {
+            document.getElementById("cm-intro").value   = course._raw.intro || "";
+            document.getElementById("cm-formula").value = course._raw.formula || "";
+            document.getElementById("cm-tip").value     = course._raw.tip || "";
+            (course._raw.sections || []).forEach((sec, i) => {
+                const blocks = document.querySelectorAll(".cm-section-block");
+                if (blocks[i]) {
+                    blocks[i].querySelector(".cm-sec-title").value = sec.title || "";
+                    blocks[i].querySelector(".cm-sec-body").value  = sec.body  || "";
+                }
+            });
+        }
+    } else {
+        titleEl.textContent = "Nouveau cours";
+    }
+    modal.classList.remove("hidden");
+}
+
+function saveCourseFromModal() {
+    const title   = document.getElementById("cm-title").value.trim();
+    const subject = document.getElementById("cm-subject").value;
+    const level   = document.getElementById("cm-level").value;
+    if (!title || !subject) {
+        document.getElementById("cm-error").classList.remove("hidden");
+        return;
+    }
+    document.getElementById("cm-error").classList.add("hidden");
+
+    const intro   = document.getElementById("cm-intro").value.trim();
+    const formula = document.getElementById("cm-formula").value.trim();
+    const tip     = document.getElementById("cm-tip").value.trim();
+    const sections = [...document.querySelectorAll(".cm-section-block")].map(block => ({
+        title: block.querySelector(".cm-sec-title").value.trim(),
+        body:  block.querySelector(".cm-sec-body").value.trim()
+    })).filter(s => s.title || s.body);
+
+    let html = "";
+    if (intro)    html += `<p>${escapeHtml(intro)}</p>`;
+    sections.forEach(sec => {
+        html += `<h3>${escapeHtml(sec.title)}</h3><p>${escapeHtml(sec.body).replace(/\n/g, "<br>")}</p>`;
+    });
+    if (formula)  html += `<div class="lesson-formula">${escapeHtml(formula)}</div>`;
+    if (tip)      html += `<div class="lesson-tip">💡 ${escapeHtml(tip)}</div>`;
+
+    const existingId = document.getElementById("cm-id").value;
+    const course = {
+        id:       existingId || `custom_${Date.now()}`,
+        subject,
+        level,
+        duration: document.getElementById("cm-duration").value.trim() || "20 min",
+        title,
+        summary:  document.getElementById("cm-summary").value.trim(),
+        content:  html,
+        _raw: { intro, formula, tip, sections }
+    };
+
+    saveCustomCourse(course);
+    document.getElementById("course-modal").classList.add("hidden");
+    renderAdminCourses();
+    renderAdminOverview();
+    showToast(existingId ? "Cours mis à jour !" : "Cours créé !", "success");
+}
+
+// ============================================================
+// ADMIN — EXERCICES
+// ============================================================
+function renderAdminExercices() {
+    const el     = document.getElementById("admin-exercices");
+    const custom = getCustomExercises();
+    const all    = typeof getAllExercises === "function" ? getAllExercises() : [];
+    el.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h3 style="font-size:1.05rem;font-weight:700">Exercices disponibles (${all.length})</h3>
+        <button class="btn-primary" type="button" id="open-new-exo">+ Nouvel exercice</button>
+    </div>
+    <div class="admin-courses-list">
+        ${all.map(e => {
+            const isCustom = custom.some(ce => ce.id === e.id);
+            return `
+            <div class="admin-course-row">
+                <div class="acr-info">
+                    <span class="lc-icon">${e.emoji || "🎮"}</span>
+                    <div>
+                        <strong>${escapeHtml(e.title)}</strong>
+                        <small>${escapeHtml(e.subtitle || "")} · ${e.level || ""}</small>
+                    </div>
+                </div>
+                <div class="acr-actions">
+                    ${isCustom ? `
+                    <button class="btn-sm acr-edit-exo" data-eid="${e.id}">✏️ Modifier</button>
+                    <button class="btn-sm acr-del-exo"  data-eid="${e.id}" style="background:#fef2f2;color:#ef4444">🗑️ Suppr.</button>
+                    ` : `<span style="color:#94a3b8;font-size:0.8rem">exercice de base</span>`}
+                </div>
+            </div>`;
+        }).join("")}
+    </div>`;
+
+    el.querySelector("#open-new-exo").addEventListener("click", () => openExoModal(null));
+    el.querySelectorAll(".acr-edit-exo").forEach(btn =>
+        btn.addEventListener("click", () => openExoModal(btn.dataset.eid))
+    );
+    el.querySelectorAll(".acr-del-exo").forEach(btn =>
+        btn.addEventListener("click", () => {
+            deleteCustomExercise(btn.dataset.eid);
+            renderAdminExercices();
+            showToast("Exercice supprimé.", "info");
+        })
+    );
+}
+
+function openExoModal(id) {
+    const modal = document.getElementById("exo-modal");
+    document.getElementById("exo-modal-title").textContent = id ? "Modifier l'exercice" : "Nouvel exercice";
+    document.getElementById("em-id").value      = "";
+    document.getElementById("em-title").value   = "";
+    document.getElementById("em-subtitle").value = "";
+    document.getElementById("em-intro").value   = "";
+    document.getElementById("em-palette").value = "";
+    document.getElementById("em-headers").value = "";
+    document.getElementById("em-error").classList.add("hidden");
+    buildExoRowsUI([]);
+
+    if (id) {
+        const exo = getCustomExercises().find(e => e.id === id);
+        if (!exo) return;
+        document.getElementById("em-id").value       = exo.id;
+        document.getElementById("em-subject").value  = exo.subject;
+        document.getElementById("em-level").value    = exo.level;
+        document.getElementById("em-title").value    = exo.title;
+        document.getElementById("em-subtitle").value = exo.subtitle || "";
+        document.getElementById("em-intro").value    = exo.intro    || "";
+        document.getElementById("em-palette").value  = (exo.palette || []).join("\n");
+        document.getElementById("em-headers").value  = (exo.headers || []).join("\n");
+        buildExoRowsUI(exo.rows || []);
+    }
+    modal.classList.remove("hidden");
+}
+
+function buildExoRowsUI(rows) {
+    const container = document.getElementById("em-rows-list");
+    container.innerHTML = "";
+    rows.forEach(row => {
+        const cellsText = (row.cells || []).map(c => c.f ? `!${c.v}` : (c.c || "")).join("\n");
+        addExoRowBlock(row.label || "", cellsText);
+    });
+}
+
+function addExoRowBlock(label, cells) {
+    const container = document.getElementById("em-rows-list");
+    const div = document.createElement("div");
+    div.className = "em-row-block";
+    div.innerHTML = `
+    <div class="em-row-inner">
+        <div class="form-group" style="flex:1;min-width:100px">
+            <label>Label</label>
+            <input type="text" class="em-row-label" value="${escapeHtml(label || "")}" placeholder="Ex: (x+1)" maxlength="40">
+        </div>
+        <div class="form-group" style="flex:2;min-width:140px">
+            <label>Cellules</label>
+            <textarea class="em-row-cells" rows="3" placeholder="!valeur_fixe\nréponse_attendue">${escapeHtml(cells || "")}</textarea>
+        </div>
+        <button class="em-del-row" type="button" title="Supprimer la ligne">✕</button>
+    </div>`;
+    div.querySelector(".em-del-row").addEventListener("click", () => div.remove());
+    container.appendChild(div);
+}
+
+function saveExoFromModal() {
+    const title   = document.getElementById("em-title").value.trim();
+    const palette = document.getElementById("em-palette").value.trim()
+                        .split("\n").map(s => s.trim()).filter(Boolean);
+    const headers = document.getElementById("em-headers").value.trim()
+                        .split("\n").map(s => s.trim()).filter(Boolean);
+
+    if (!title || palette.length === 0 || headers.length < 2) {
+        document.getElementById("em-error").classList.remove("hidden");
+        return;
+    }
+    document.getElementById("em-error").classList.add("hidden");
+
+    const rows = [...document.querySelectorAll(".em-row-block")].map(block => {
+        const lbl   = block.querySelector(".em-row-label").value.trim();
+        const lines = block.querySelector(".em-row-cells").value.trim()
+                           .split("\n").map(s => s.trim()).filter(Boolean);
+        const cells = lines.map(l => l.startsWith("!") ? { v: l.slice(1), f: 1 } : { c: l });
+        return { label: lbl, cells };
+    }).filter(r => r.label);
+
+    if (rows.length === 0) {
+        document.getElementById("em-error").classList.remove("hidden");
+        return;
+    }
+
+    const existingId = document.getElementById("em-id").value;
+    const exo = {
+        id:       existingId || `cexo_${Date.now()}`,
+        subject:  document.getElementById("em-subject").value,
+        level:    document.getElementById("em-level").value,
+        emoji:    "📝",
+        title,
+        subtitle: document.getElementById("em-subtitle").value.trim(),
+        intro:    document.getElementById("em-intro").value.trim(),
+        type:     "grid",
+        palette,
+        headers,
+        labelW:   140,
+        colW:     110,
+        rows,
+    };
+
+    saveCustomExercise(exo);
+    document.getElementById("exo-modal").classList.add("hidden");
+    renderAdminExercices();
+    showToast(existingId ? "Exercice mis à jour !" : "Exercice créé !", "success");
 }
 
 // ============================================================
@@ -913,6 +1218,33 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll(".admin-tab").forEach(btn => {
         btn.addEventListener("click", () => switchAdminTab(btn.dataset.atab));
     });
+
+    // --- Bouton ajouter un cours (sidebar cours) ---
+    document.getElementById("btn-add-course-sidebar").addEventListener("click", () => openCourseModal(null));
+
+    // --- Bouton ajouter un exercice (page exercices) ---
+    document.getElementById("btn-add-exo-sidebar").addEventListener("click", () => openExoModal(null));
+
+    // --- Course modal ---
+    document.getElementById("close-course-modal").addEventListener("click", () => {
+        document.getElementById("course-modal").classList.add("hidden");
+    });
+    document.getElementById("course-modal").addEventListener("click", e => {
+        if (e.target === document.getElementById("course-modal"))
+            document.getElementById("course-modal").classList.add("hidden");
+    });
+    document.getElementById("submit-course").addEventListener("click", saveCourseFromModal);
+
+    // --- Modal exercice ---
+    document.getElementById("close-exo-modal").addEventListener("click", () =>
+        document.getElementById("exo-modal").classList.add("hidden")
+    );
+    document.getElementById("exo-modal").addEventListener("click", e => {
+        if (e.target === document.getElementById("exo-modal"))
+            document.getElementById("exo-modal").classList.add("hidden");
+    });
+    document.getElementById("submit-exo").addEventListener("click", saveExoFromModal);
+    document.getElementById("em-add-row").addEventListener("click", () => addExoRowBlock("", ""));
 
     updateHeroStats();
 });

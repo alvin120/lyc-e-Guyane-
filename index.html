@@ -23,6 +23,7 @@
             <a href="#" class="nav-link" data-view="quiz">Quiz</a>
             <a href="#" class="nav-link" data-view="progression">Progression</a>
             <a href="#" class="nav-link" data-view="forum">Forum</a>
+            <a href="#" class="nav-link" data-view="exercices">🎮 Exercices</a>
         </nav>
         <div class="header-auth" id="header-auth">
             <!-- Non connecté -->
@@ -221,6 +222,7 @@
             <button class="sidebar-item" data-filter="anglais">🌍 Anglais</button>
             <button class="sidebar-item" data-filter="ses">📊 SES</button>
             <button class="sidebar-item" data-filter="philo">🤔 Philosophie</button>
+            <button class="btn-add-course hidden" type="button" id="btn-add-course-sidebar">+ Ajouter un cours</button>
         </aside>
 
         <div class="cours-main">
@@ -467,22 +469,233 @@
         <p>Gestion de la plateforme EduGuyane</p>
     </div>
     <div class="admin-tabs-bar">
-        <button class="admin-tab active" data-atab="overview">📊 Vue d'ensemble</button>
-        <button class="admin-tab" data-atab="users">👥 Utilisateurs</button>
-        <button class="admin-tab" data-atab="forum">💬 Modération Forum</button>
+        <button class="admin-tab active" type="button" data-atab="overview">📊 Vue d'ensemble</button>
+        <button class="admin-tab" type="button" data-atab="users">👥 Utilisateurs</button>
+        <button class="admin-tab" type="button" data-atab="courses">📚 Cours</button>
+        <button class="admin-tab" type="button" data-atab="exercices">🎮 Exercices</button>
+        <button class="admin-tab" type="button" data-atab="forum">💬 Modération Forum</button>
     </div>
-    <div id="admin-overview" class="admin-panel active"></div>
-    <div id="admin-users"   class="admin-panel"></div>
-    <div id="admin-forum"   class="admin-panel"></div>
+    <div id="admin-overview"  class="admin-panel active"></div>
+    <div id="admin-users"     class="admin-panel"></div>
+    <div id="admin-courses"   class="admin-panel"></div>
+    <div id="admin-exercices" class="admin-panel"></div>
+    <div id="admin-forum"     class="admin-panel"></div>
+</section>
+
+<!-- ============ MODAL ÉDITEUR COURS ============ -->
+<div class="modal-overlay hidden" id="course-modal">
+    <div class="modal course-modal">
+        <div class="modal-header">
+            <h3 id="course-modal-title">Nouveau cours</h3>
+            <button class="modal-close" type="button" id="close-course-modal">✕</button>
+        </div>
+        <div class="modal-body course-modal-body">
+            <input type="hidden" id="cm-id">
+            <div class="cm-row2">
+                <div class="form-group">
+                    <label>Matière</label>
+                    <select id="cm-subject" aria-label="Matière du cours">
+                        <option value="maths">📐 Mathématiques</option>
+                        <option value="francais">📖 Français</option>
+                        <option value="histgeo">🗺️ Histoire-Géo</option>
+                        <option value="svt">🌿 SVT</option>
+                        <option value="physchim">⚗️ Physique-Chimie</option>
+                        <option value="anglais">🌍 Anglais</option>
+                        <option value="ses">📊 SES</option>
+                        <option value="philo">🤔 Philosophie</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Niveau</label>
+                    <select id="cm-level" aria-label="Niveau scolaire">
+                        <option value="Seconde">Seconde</option>
+                        <option value="Première">Première</option>
+                        <option value="Terminale">Terminale</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Durée</label>
+                    <input type="text" id="cm-duration" placeholder="Ex: 30 min" maxlength="20">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Titre du cours</label>
+                <input type="text" id="cm-title" placeholder="Ex: Les fonctions dérivées" maxlength="80">
+            </div>
+            <div class="form-group">
+                <label>Résumé <span class="label-hint">(affiché dans la liste)</span></label>
+                <input type="text" id="cm-summary" placeholder="Une phrase de description" maxlength="120">
+            </div>
+            <div class="form-group">
+                <label>Introduction</label>
+                <textarea id="cm-intro" rows="3" placeholder="Paragraphe d'introduction du cours..." maxlength="600"></textarea>
+            </div>
+            <div class="cm-sections" id="cm-sections">
+                <div class="cm-section-block" data-sec="0">
+                    <div class="form-group">
+                        <label>Partie 1 — Titre <span class="label-hint">(optionnel)</span></label>
+                        <input type="text" class="cm-sec-title" placeholder="Ex: Définition" maxlength="60">
+                    </div>
+                    <div class="form-group">
+                        <label>Partie 1 — Contenu</label>
+                        <textarea class="cm-sec-body" rows="3" placeholder="Contenu de cette partie..." maxlength="800"></textarea>
+                    </div>
+                </div>
+                <div class="cm-section-block" data-sec="1">
+                    <div class="form-group">
+                        <label>Partie 2 — Titre <span class="label-hint">(optionnel)</span></label>
+                        <input type="text" class="cm-sec-title" placeholder="Ex: Propriétés" maxlength="60">
+                    </div>
+                    <div class="form-group">
+                        <label>Partie 2 — Contenu</label>
+                        <textarea class="cm-sec-body" rows="3" placeholder="Contenu de cette partie..." maxlength="800"></textarea>
+                    </div>
+                </div>
+                <div class="cm-section-block" data-sec="2">
+                    <div class="form-group">
+                        <label>Partie 3 — Titre <span class="label-hint">(optionnel)</span></label>
+                        <input type="text" class="cm-sec-title" placeholder="Ex: Exemple" maxlength="60">
+                    </div>
+                    <div class="form-group">
+                        <label>Partie 3 — Contenu</label>
+                        <textarea class="cm-sec-body" rows="3" placeholder="Contenu de cette partie..." maxlength="800"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="cm-row2">
+                <div class="form-group">
+                    <label>Formule clé <span class="label-hint">(optionnel)</span></label>
+                    <input type="text" id="cm-formula" placeholder="Ex: f'(x) = 2x">
+                </div>
+                <div class="form-group">
+                    <label>Conseil / Astuce <span class="label-hint">(optionnel)</span></label>
+                    <input type="text" id="cm-tip" placeholder="Ex: Pensez à vérifier le signe...">
+                </div>
+            </div>
+            <p class="auth-error hidden" id="cm-error">Merci de remplir les champs obligatoires.</p>
+            <button class="btn-primary btn-full" type="button" id="submit-course">💾 Enregistrer le cours</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============ MODAL ÉDITEUR EXERCICE ============ -->
+<div class="modal-overlay hidden" id="exo-modal">
+    <div class="modal exo-modal-box">
+        <div class="modal-header">
+            <h3 id="exo-modal-title">Nouvel exercice</h3>
+            <button class="modal-close" type="button" id="close-exo-modal">✕</button>
+        </div>
+        <div class="modal-body exo-modal-body">
+            <input type="hidden" id="em-id">
+            <div class="cm-row2">
+                <div class="form-group">
+                    <label>Matière</label>
+                    <select id="em-subject" aria-label="Matière">
+                        <option value="maths">📐 Mathématiques</option>
+                        <option value="francais">📖 Français</option>
+                        <option value="histgeo">🗺️ Histoire-Géo</option>
+                        <option value="svt">🌿 SVT</option>
+                        <option value="physchim">⚗️ Physique-Chimie</option>
+                        <option value="anglais">🌍 Anglais</option>
+                        <option value="ses">📊 SES</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Niveau</label>
+                    <select id="em-level" aria-label="Niveau">
+                        <option value="Seconde">Seconde</option>
+                        <option value="Première">Première</option>
+                        <option value="Terminale">Terminale</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Titre</label>
+                <input type="text" id="em-title" placeholder="Ex: Tableau de signes" maxlength="60">
+            </div>
+            <div class="form-group">
+                <label>Sous-titre <span class="label-hint">(optionnel)</span></label>
+                <input type="text" id="em-subtitle" placeholder="Ex: f(x) = x² − 1" maxlength="60">
+            </div>
+            <div class="form-group">
+                <label>Consigne pour l'élève</label>
+                <textarea id="em-intro" rows="2" placeholder="Complète le tableau en cliquant chaque case..." maxlength="200"></textarea>
+            </div>
+            <div class="cm-row2">
+                <div class="form-group">
+                    <label>Options de réponse <span class="label-hint">(une par ligne)</span></label>
+                    <textarea id="em-palette" rows="5" placeholder="Infrason&#10;Audible&#10;Ultrason"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>En-têtes colonnes <span class="label-hint">(une par ligne, 1ère = colonne labels)</span></label>
+                    <textarea id="em-headers" rows="5" placeholder="Source sonore&#10;Fréquence&#10;Catégorie"></textarea>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Lignes du tableau</label>
+                <p class="label-hint" style="margin-bottom:6px">Cellules : commencer par <strong>!</strong> pour valeur fixe (ex: <code>!440 Hz</code>), sinon = réponse attendue (ex: <code>Audible</code>).</p>
+                <div id="em-rows-list"></div>
+                <button class="btn-sm" type="button" id="em-add-row" style="margin-top:8px">+ Ajouter une ligne</button>
+            </div>
+            <p class="auth-error hidden" id="em-error">Merci de remplir le titre, les options et au moins 2 en-têtes.</p>
+            <button class="btn-primary btn-full" type="button" id="submit-exo">💾 Enregistrer l'exercice</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============ EXERCICES ============ -->
+<section class="view" id="view-exercices">
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+        <div>
+            <h1>Exercices</h1>
+            <p>Entraîne-toi avec des exercices interactifs</p>
+        </div>
+        <button class="btn-add-course hidden" type="button" id="btn-add-exo-sidebar">+ Ajouter un exercice</button>
+    </div>
+    <div id="exercices-home"></div>
+    <div class="sudoku-game hidden" id="sudoku-game"></div>
 </section>
 
 </main>
+
+<!-- ============ PROFESSEUR IA — Widget ============ -->
+<button class="ai-tutor-btn" id="ai-tutor-btn" title="Professeur IA — Aide pédagogique" aria-label="Ouvrir le Professeur IA">
+    🤖
+</button>
+
+<div class="ai-tutor-panel hidden" id="ai-tutor-panel" role="dialog" aria-label="Professeur IA">
+    <div class="ai-panel-header">
+        <div class="ai-panel-title">
+            <span class="ai-avatar">🤖</span>
+            <div>
+                <strong>Professeur IA</strong>
+                <small>Aide pédagogique EduGuyane</small>
+            </div>
+        </div>
+        <div class="ai-panel-hdr-btns">
+            <button class="ai-icon-btn" id="ai-clear-btn" title="Effacer la conversation">🗑️</button>
+            <button class="ai-icon-btn" id="ai-cfg-btn" title="Configurer la clé API">⚙️</button>
+            <button class="ai-icon-btn" id="ai-close-btn" title="Fermer">✕</button>
+        </div>
+    </div>
+
+    <div class="ai-messages" id="ai-messages"></div>
+
+    <div class="ai-config hidden" id="ai-config"></div>
+
+    <div class="ai-input-area" id="ai-input-area">
+        <textarea id="ai-input" placeholder="Pose ta question sur l'exercice…" rows="2" maxlength="600"></textarea>
+        <button class="ai-send-btn" id="ai-send-btn" aria-label="Envoyer">↑</button>
+    </div>
+</div>
 
 <script src="auth.js"></script>
 <script src="animations.js"></script>
 <script src="quiz-visuals.js"></script>
 <script src="data.js"></script>
 <script src="dynamics.js"></script>
+<script src="exercises.js"></script>
 <script src="script.js"></script>
+<script src="ai-tutor.js"></script>
 </body>
 </html>

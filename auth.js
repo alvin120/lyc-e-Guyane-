@@ -134,3 +134,43 @@ function deleteUser(userId) {
     const users = getUsers().filter(u => u.id !== userId);
     saveUsers(users);
 }
+
+// ============================================================
+// COURS PERSONNALISÉS
+// ============================================================
+function getCustomCourses() {
+    return JSON.parse(localStorage.getItem("eduguyane_custom_courses") || "[]");
+}
+
+function saveCustomCourse(course) {
+    const courses = getCustomCourses();
+    const idx = courses.findIndex(c => c.id === course.id);
+    if (idx !== -1) courses[idx] = course;
+    else courses.push(course);
+    localStorage.setItem("eduguyane_custom_courses", JSON.stringify(courses));
+}
+
+function deleteCustomCourse(id) {
+    const courses = getCustomCourses().filter(c => c.id !== id);
+    localStorage.setItem("eduguyane_custom_courses", JSON.stringify(courses));
+}
+
+// ============================================================
+// EXERCICES PERSONNALISÉS
+// ============================================================
+function getCustomExercises() {
+    return JSON.parse(localStorage.getItem("eduguyane_custom_exercises") || "[]");
+}
+
+function saveCustomExercise(exo) {
+    const list = getCustomExercises();
+    const idx  = list.findIndex(e => e.id === exo.id);
+    if (idx !== -1) list[idx] = exo;
+    else list.push(exo);
+    localStorage.setItem("eduguyane_custom_exercises", JSON.stringify(list));
+}
+
+function deleteCustomExercise(id) {
+    const list = getCustomExercises().filter(e => e.id !== id);
+    localStorage.setItem("eduguyane_custom_exercises", JSON.stringify(list));
+}
