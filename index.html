@@ -24,6 +24,8 @@
             <a href="#" class="nav-link" data-view="progression">Progression</a>
             <a href="#" class="nav-link" data-view="forum">Forum</a>
             <a href="#" class="nav-link" data-view="exercices">🎮 Exercices</a>
+            <a href="#" class="nav-link" data-view="matieres">📚 Matières</a>
+            <a href="#" class="nav-link" data-view="espaces">👤 Espaces</a>
         </nav>
         <div class="header-auth" id="header-auth">
             <!-- Non connecté -->
@@ -656,6 +658,21 @@
     <div class="sudoku-game hidden" id="sudoku-game"></div>
 </section>
 
+<!-- ============ VUE : MATIÈRES ============ -->
+<section class="view" id="view-matieres">
+    <!-- Rendu dynamique par matieres.js → renderMatieres() -->
+</section>
+
+<!-- ============ VUE : DÉTAIL MATIÈRE ============ -->
+<section class="view" id="view-matiere-detail">
+    <!-- Rendu dynamique par matieres.js → renderMatiereDetail() -->
+</section>
+
+<!-- ============ VUE : ESPACES UTILISATEURS ============ -->
+<section class="view" id="view-espaces">
+    <!-- Rendu dynamique par matieres.js → renderEspaces() -->
+</section>
+
 </main>
 
 <!-- ============ PROFESSEUR IA — Widget ============ -->
@@ -695,6 +712,8 @@
 <script src="data.js"></script>
 <script src="dynamics.js"></script>
 <script src="exercises.js"></script>
+<script src="data-matieres.js"></script>
+<script src="matieres.js"></script>
 <script src="script.js"></script>
 <script src="ai-tutor.js"></script>
 </body>

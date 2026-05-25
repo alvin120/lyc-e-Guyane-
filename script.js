@@ -68,14 +68,17 @@ function navigateTo(view) {
     closeUserDropdown();
     closeNav();
 
-    if (view === "cours")       renderCoursList();
-    if (view === "quiz")        renderQuizGrid();
-    if (view === "progression") renderProgression();
-    if (view === "forum")       renderForum();
-    if (view === "accueil")     updateHeroStats();
-    if (view === "profil")      renderProfile();
-    if (view === "admin")       renderAdmin();
-    if (view === "exercices")   renderExercicesList();
+    if (view === "cours")          renderCoursList();
+    if (view === "quiz")           renderQuizGrid();
+    if (view === "progression")    renderProgression();
+    if (view === "forum")          renderForum();
+    if (view === "accueil")        updateHeroStats();
+    if (view === "profil")         renderProfile();
+    if (view === "admin")          renderAdmin();
+    if (view === "exercices")      renderExercicesList();
+    if (view === "matieres")       renderMatieres();
+    if (view === "matiere-detail") renderMatiereDetail();
+    if (view === "espaces")        renderEspaces();
 }
 
 function closeNav() {
