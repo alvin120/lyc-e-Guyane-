@@ -17,14 +17,16 @@ input, select, textarea { font-family: inherit; }
    VARIABLES
    ============================================================ */
 :root {
-    --green: #16a34a;
-    --green-light: #22c55e;
-    --green-bg: #f0fdf4;
+    --green: #2563eb;
+    --green-light: #3b82f6;
+    --green-bg: #eff6ff;
     --blue: #3b82f6;
     --gold: #f59e0b;
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
     --radius: 14px;
-    --shadow: 0 2px 16px rgba(0,0,0,0.08);
-    --shadow-lg: 0 8px 40px rgba(0,0,0,0.12);
+    --shadow: 0 2px 16px rgba(0,0,0,0.07);
+    --shadow-lg: 0 8px 40px rgba(0,0,0,0.10);
     --header-h: 64px;
 }
 
@@ -87,7 +89,7 @@ input, select, textarea { font-family: inherit; }
     padding: 11px 22px; font-size: 0.95rem; font-weight: 600;
     transition: background 0.18s, transform 0.12s;
 }
-.btn-primary:hover { background: #15803d; transform: translateY(-1px); }
+.btn-primary:hover { background: #1d4ed8; transform: translateY(-1px); }
 .btn-secondary {
     background: white; color: var(--green);
     border: 2px solid var(--green); border-radius: 10px;
@@ -191,7 +193,7 @@ input, select, textarea { font-family: inherit; }
 /* Stats section */
 .stats-section {
     display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
-    background: linear-gradient(135deg, #166534, #15803d);
+    background: linear-gradient(135deg, #1e3a8a, #2563eb);
     border-radius: var(--radius); padding: 32px;
 }
 .stat-box { text-align: center; color: white; }
@@ -532,7 +534,7 @@ blockquote {
     cursor: pointer; transition: background 0.18s;
     white-space: nowrap;
 }
-.btn-login:hover { background: #15803d; }
+.btn-login:hover { background: #1d4ed8; }
 
 .user-menu { position: relative; }
 .user-btn {
@@ -879,7 +881,7 @@ blockquote {
 .hero-content, .hero-visual { position: relative; z-index: 1; }
 .hero-bg-orb {
     position: absolute; border-radius: 50%;
-    background: radial-gradient(circle, rgba(34,197,94,0.13) 0%, transparent 68%);
+    background: radial-gradient(circle, rgba(37,99,235,0.10) 0%, transparent 68%);
     pointer-events: none; z-index: 0;
     animation: orbFloat 7s ease-in-out infinite;
 }
@@ -1112,7 +1114,7 @@ blockquote {
 
 /* ---- STATS SECTION AMÉLIORÉE ---- */
 .stats-section {
-    background: linear-gradient(135deg, #0f4c2a 0%, #166534 50%, #15803d 100%);
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #2563eb 100%);
     border-radius: 20px;
     padding: 36px;
     position: relative;
@@ -1307,7 +1309,7 @@ blockquote {
 
 /* --- Gradient animé hero h1 --- */
 .gradient-text {
-    background: linear-gradient(135deg, #16a34a, #22c55e, #059669, #16a34a);
+    background: linear-gradient(135deg, #2563eb, #3b82f6, #1d4ed8, #2563eb);
     background-size: 300% 300%;
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     animation: gradientShift 4s ease infinite;
@@ -1475,7 +1477,7 @@ blockquote {
     border: none; cursor: pointer;
     transition: background 0.18s, transform 0.12s;
 }
-.btn-add-course:hover { background: #15803d; transform: translateY(-1px); }
+.btn-add-course:hover { background: #1d4ed8; transform: translateY(-1px); }
 .btn-add-course:active { transform: scale(0.97); }
 
 .admin-courses-list { display: flex; flex-direction: column; gap: 8px; }
@@ -1499,8 +1501,8 @@ blockquote {
     z-index: 500;
     transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
 }
-.ai-tutor-btn:hover { background: #15803d; transform: scale(1.08); box-shadow: 0 6px 28px rgba(22,163,74,0.55); }
-.ai-tutor-btn.ai-btn-active { background: #15803d; transform: scale(1.06); }
+.ai-tutor-btn:hover { background: #1d4ed8; transform: scale(1.08); box-shadow: 0 6px 28px rgba(37,99,235,0.50); }
+.ai-tutor-btn.ai-btn-active { background: #1d4ed8; transform: scale(1.06); }
 
 .ai-tutor-panel {
     position: fixed; bottom: 100px; right: 28px;
@@ -1519,7 +1521,7 @@ blockquote {
 
 .ai-panel-header {
     padding: 14px 16px;
-    background: linear-gradient(135deg, var(--green) 0%, #15803d 100%);
+    background: linear-gradient(135deg, var(--green) 0%, #1d4ed8 100%);
     color: white;
     display: flex; align-items: center; justify-content: space-between;
     flex-shrink: 0;
@@ -1607,7 +1609,7 @@ blockquote {
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0; transition: background 0.15s, transform 0.12s;
 }
-.ai-send-btn:hover { background: #15803d; transform: translateY(-1px); }
+.ai-send-btn:hover { background: #1d4ed8; transform: translateY(-1px); }
 .ai-send-btn:active { transform: scale(0.95); }
 
 /* Bouton aide rapide après vérification exercice */
@@ -2009,32 +2011,32 @@ blockquote {
    SCHOOL DESIGN SYSTEM — Animations & Thème Scolaire
    ============================================================ */
 
-/* === Fond papier millimétré animé === */
+/* === Fond épuré style Carex === */
 body {
-    background-color: #f0fdf4;
+    background-color: #f8fafc;
     background-image:
-        linear-gradient(rgba(34,197,94,0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(34,197,94,0.04) 1px, transparent 1px);
-    background-size: 36px 36px;
+        radial-gradient(circle, rgba(37,99,235,0.045) 1px, transparent 1px);
+    background-size: 28px 28px;
     background-attachment: fixed;
 }
 
 /* === Header glassmorphism === */
 .header {
-    background: rgba(255,255,255,0.88) !important;
-    -webkit-backdrop-filter: blur(14px);
-    backdrop-filter: blur(14px);
-    border-bottom: 1px solid rgba(34,197,94,0.15) !important;
+    background: rgba(255,255,255,0.96) !important;
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(37,99,235,0.10) !important;
     transition: box-shadow 0.3s;
 }
 .header.scrolled { box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
 
-/* === Logo bounce === */
+/* === Logo SVG style Carex (pas d'animation bounce) === */
 .logo-icon {
-    display: inline-block;
-    animation: logoBounce 3s ease-in-out infinite;
-    transform-origin: bottom center;
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
 }
+.logo-icon svg { display: block; }
 @keyframes logoBounce {
     0%,100% { transform: rotate(0deg) scale(1); }
     20%      { transform: rotate(-10deg) scale(1.15); }
@@ -2189,11 +2191,11 @@ body {
 .forum-post { transition: transform 0.2s, box-shadow 0.2s, border-left-color 0.2s; }
 .forum-post:hover { transform: translateX(5px); box-shadow: var(--shadow-lg); }
 
-/* === AI tutor anneau pulsant === */
+/* === AI tutor anneau pulsant bleu === */
 .ai-tutor-btn { animation: aiRing 2.5s ease-in-out infinite; }
 @keyframes aiRing {
-    0%,100% { box-shadow: 0 4px 20px rgba(22,163,74,0.45), 0 0 0 0 rgba(22,163,74,0.25); }
-    60%      { box-shadow: 0 4px 20px rgba(22,163,74,0.45), 0 0 0 12px rgba(22,163,74,0); }
+    0%,100% { box-shadow: 0 4px 20px rgba(37,99,235,0.45), 0 0 0 0 rgba(37,99,235,0.25); }
+    60%      { box-shadow: 0 4px 20px rgba(37,99,235,0.45), 0 0 0 12px rgba(37,99,235,0); }
 }
 .ai-tutor-btn:hover { animation: none; }
 
@@ -2206,21 +2208,21 @@ body {
 
 /* === Quiz item card hover amélioré (entrée gérée par staggerIn JS) === */
 
-/* === Input focus glow vert === */
+/* === Input focus glow bleu Carex === */
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
-    box-shadow: 0 0 0 3px rgba(34,197,94,0.18);
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
 }
 
-/* === Section title soulignement arc-en-ciel === */
+/* === Section title soulignement bleu Carex === */
 .section-title { position: relative; display: inline-block; }
 .section-title::after {
     content: '';
     position: absolute;
     bottom: -5px; left: 0;
     width: 100%; height: 4px;
-    background: linear-gradient(90deg, var(--green), #22c55e, #3b82f6, var(--green));
+    background: linear-gradient(90deg, var(--green), #60a5fa, #93c5fd, var(--green));
     background-size: 200%;
     border-radius: 2px;
     transform: scaleX(0);
@@ -2279,7 +2281,7 @@ body {
 
 /* === Page header H1 dégradé animé === */
 .page-header h1 {
-    background: linear-gradient(135deg, #1e293b 0%, #16a34a 50%, #1e293b 100%);
+    background: linear-gradient(135deg, #1e293b 0%, #2563eb 50%, #1e293b 100%);
     background-size: 200%;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -2301,12 +2303,12 @@ body {
 }
 .quiz-opt.wrong { animation: wrongShake 0.4s ease; }
 
-/* === Progression cercle lueur verte === */
+/* === Progression cercle lueur bleue === */
 .prog-circle-wrap {
-    filter: drop-shadow(0 0 10px rgba(34,197,94,0.3));
+    filter: drop-shadow(0 0 10px rgba(37,99,235,0.25));
     transition: filter 0.3s;
 }
-.prog-circle-wrap:hover { filter: drop-shadow(0 0 16px rgba(34,197,94,0.5)); }
+.prog-circle-wrap:hover { filter: drop-shadow(0 0 16px rgba(37,99,235,0.40)); }
 
 /* === Quiz item card hover amélioré === */
 .quiz-item-card:hover {
@@ -2328,4 +2330,92 @@ body {
         transition-duration: 0.01ms !important;
     }
 }
+
+/* ============================================================
+   CAREX-INSPIRED OVERRIDES — Corrections sémantiques & visuelles
+   Inspired by Carex UX Case Study Template
+   ============================================================ */
+
+/* --- Garder le vert sémantique pour le quiz (correct/faux) --- */
+.quiz-opt.correct  { border-color: #16a34a !important; }
+.quiz-progress-bar > div { background: var(--green); }
+
+/* --- Garder le vert pour le tag "fait/lu" --- */
+.tag-done { color: #16a34a !important; }
+
+/* --- Garder le vert pour les badges déverrouillés (achievements) --- */
+.badge-card.unlocked { border-color: #22c55e !important; }
+
+/* --- Fix: formula de leçon → style bleu informatif --- */
+.lesson-formula { background: #eff6ff !important; border-left-color: #2563eb !important; color: #1d4ed8 !important; }
+
+/* --- Fix: intro exercice → fond bleu clair au lieu de vert --- */
+.exo-intro { background: #eff6ff !important; border-left-color: #2563eb !important; }
+
+/* --- Fix: sidebar active accent bleu animé --- */
+.sidebar-item.active::before { background: #2563eb !important; }
+
+/* --- Fix: AI tutor button shadow bleu --- */
+.ai-tutor-btn { box-shadow: 0 4px 20px rgba(37,99,235,0.40); }
+
+/* --- Fix: blockquote accent bleu (cohérence Carex) --- */
+blockquote { border-left-color: #2563eb !important; background: #eff6ff !important; }
+
+/* --- Fix: lesson-card barre droite bleue --- */
+.lesson-card::after {
+    background: linear-gradient(to bottom, #60a5fa, #2563eb) !important;
+}
+
+/* --- AI config inputs focus bleu --- */
+.ai-config input:focus { border-color: #2563eb !important; outline: none; }
+.ai-input-area textarea:focus { border-color: #2563eb !important; }
+
+/* --- Hover cards subject: ring bleu au lieu de vert-clair --- */
+.subject-card:hover {
+    box-shadow: 0 16px 48px rgba(0,0,0,0.12), 0 0 0 2px #3b82f6 !important;
+}
+
+/* --- Logo texte bleu Carex --- */
+.logo { color: #2563eb !important; }
+
+/* --- Hero badge bleu Carex --- */
+.hero-badge { background: #eff6ff !important; color: #2563eb !important; }
+
+/* --- hc-stat strong bleu --- */
+.hc-stat strong { color: #2563eb !important; }
+
+/* --- Quiz item card hover top border bleu --- */
+.quiz-item-card:hover { border-top-color: #2563eb !important; }
+
+/* --- Forum post hover border bleu --- */
+.forum-post:hover { border-left-color: #3b82f6 !important; }
+
+/* --- Espaces tab active: bleu Carex --- */
+.esp-tab.active { color: #2563eb !important; border-bottom-color: #2563eb !important; }
+.esp-tab:hover  { color: #2563eb !important; }
+
+/* --- Carex hero: fond léger bleu derrière la hero card --- */
+.hero-card {
+    background: white !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 12px 40px rgba(37,99,235,0.12) !important;
+}
+
+/* --- Stats section motif diagonal bleu --- */
+.stats-section::before {
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* --- Quiz mauvaise réponse: garder rouge shake --- */
+.quiz-opt.wrong { border-color: #ef4444 !important; }
+
+/* --- Pal btn exercice hover bleu --- */
+.exo-pal-btn:hover { background: #eff6ff !important; border-color: #2563eb !important; color: #2563eb !important; }
+
+/* --- AI help inline btn bleu --- */
+.ai-help-inline-btn { background: #eff6ff !important; color: #2563eb !important; border-color: #2563eb !important; }
+.ai-help-inline-btn:hover { background: #dbeafe !important; }
+
+/* --- Carex: user-btn hover bleu --- */
+.user-btn:hover { border-color: #2563eb !important; background: #eff6ff !important; }
 
