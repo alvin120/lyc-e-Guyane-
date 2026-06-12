@@ -19,15 +19,27 @@ const state = {
     lessonsRead: {},
 };
 
-function loadState() {
+// Cache pour les données Supabase (évite de rendre les renderers synchrones async)
+let _customCourses   = [];
+let _customExercises = [];
+let _forumPosts      = [];
+
+async function loadCustomContent() {
+    [_customCourses, _customExercises] = await Promise.all([
+        getCustomCourses(),
+        getCustomExercises()
+    ]);
+}
+
+async function loadState() {
     const user = getCurrentUser();
-    const saved = getUserProgress(user ? user.id : null);
+    const saved = await getUserProgress(user ? user.id : null);
     Object.assign(state, saved);
 }
 
 function saveState() {
     const user = getCurrentUser();
-    saveUserProgress(user ? user.id : null, state);
+    saveUserProgress(user ? user.id : null, state); // fire-and-forget
 }
 
 function resetState() {
@@ -141,11 +153,16 @@ function switchAuthTab(tab) {
     if (tab === "register") renderAvatarGrid("avatar-grid-reg");
 }
 
-function handleLogin() {
+async function handleLogin() {
     const username = document.getElementById("login-username").value.trim();
     const password = document.getElementById("login-password").value;
-    const errEl = document.getElementById("login-error");
-    const user = authLogin(username, password);
+    const errEl    = document.getElementById("login-error");
+    const btn      = document.getElementById("submit-login");
+    btn.disabled = true;
+    btn.textContent = "Connexion…";
+    const user = await authLogin(username, password);
+    btn.disabled = false;
+    btn.textContent = "Se connecter";
     if (!user) {
         errEl.textContent = "Identifiants incorrects.";
         errEl.classList.remove("hidden");
@@ -153,7 +170,7 @@ function handleLogin() {
     }
     errEl.classList.add("hidden");
     resetState();
-    loadState();
+    await loadState();
     closeAuthModal();
     renderHeaderAuth();
     updateHeroStats();
@@ -164,33 +181,36 @@ function handleLogin() {
     showToast(`Bienvenue ${user.name} !`, "success");
 }
 
-function handleRegister() {
+async function handleRegister() {
     const username = document.getElementById("reg-username").value.trim();
     const name     = document.getElementById("reg-name").value.trim();
     const password = document.getElementById("reg-password").value;
     const errEl    = document.getElementById("reg-error");
-    const result   = authRegister(username, name, password, selectedAvatar);
+    const btn      = document.getElementById("submit-register");
+    btn.disabled = true;
+    btn.textContent = "Création…";
+    const result = await authRegister(username, name, password, selectedAvatar);
+    btn.disabled = false;
+    btn.textContent = "Créer mon compte";
     if (result.error) {
         errEl.textContent = result.error;
         errEl.classList.remove("hidden");
         return;
     }
     errEl.classList.add("hidden");
-    // Auto-login after register
-    authLogin(username, password);
     resetState();
-    loadState();
+    await loadState();
     closeAuthModal();
     renderHeaderAuth();
     document.getElementById("reg-username").value = "";
-    document.getElementById("reg-name").value = "";
+    document.getElementById("reg-name").value     = "";
     document.getElementById("reg-password").value = "";
+    showToast(`Bienvenue ${result.user.name} ! 🎉`, "success");
 }
 
-function handleLogout() {
-    authLogout();
+async function handleLogout() {
+    await authLogout();
     resetState();
-    loadState();
     renderHeaderAuth();
     updateHeroStats();
     if (currentView === "profil" || currentView === "admin") navigateTo("accueil");
@@ -249,7 +269,7 @@ function renderProfile() {
     renderAvatarGrid("avatar-grid-profile");
 }
 
-function saveProfile() {
+async function saveProfile() {
     const user = getCurrentUser();
     if (!user) return;
     const name     = document.getElementById("edit-name").value.trim();
@@ -259,7 +279,7 @@ function saveProfile() {
     if (password) changes.password = password;
     changes.avatar = selectedAvatar;
 
-    updateUserProfile(user.id, changes);
+    await updateUserProfile(user.id, changes);
     const successEl = document.getElementById("edit-success");
     successEl.classList.remove("hidden");
     setTimeout(() => successEl.classList.add("hidden"), 3000);
@@ -272,7 +292,7 @@ function saveProfile() {
 // COURS
 // ============================================================
 function getAllCourses() {
-    return [...COURSES, ...getCustomCourses()];
+    return [...COURSES, ..._customCourses];
 }
 
 function renderCoursList() {
@@ -537,34 +557,44 @@ function renderProgression() {
 // ============================================================
 // FORUM
 // ============================================================
+const CAT_LABELS = {
+    maths: "📐 Maths", francais: "📖 Français", histgeo: "🗺️ Histoire-Géo",
+    svt: "🌿 SVT", physchim: "⚗️ Physique-Chimie", anglais: "🌍 Anglais", autre: "💬 Autre"
+};
+
 function renderForum() {
+    const forumPostsEl = document.getElementById("forum-posts");
+    forumPostsEl.innerHTML = '<p class="empty-msg" style="opacity:.5">⏳ Chargement du forum…</p>';
+    getForumPosts().then(posts => {
+        _forumPosts = posts;
+        _renderForumPosts(posts);
+    });
+}
+
+function _renderForumPosts(allPosts) {
     const search = document.getElementById("forum-search").value.toLowerCase();
-    const posts  = FORUM_POSTS
+    const posts  = allPosts
         .filter(p => forumFilter === "all" || p.cat === forumFilter)
         .filter(p => !search || p.title.toLowerCase().includes(search) || p.body.toLowerCase().includes(search));
 
-    const catLabels = {
-        maths: "📐 Maths", francais: "📖 Français", histgeo: "🗺️ Histoire-Géo",
-        svt: "🌿 SVT", physchim: "⚗️ Physique-Chimie", anglais: "🌍 Anglais", autre: "💬 Autre"
-    };
-    const user = getCurrentUser();
+    const user    = getCurrentUser();
     const isAdmin = user && user.role === "admin";
-
     const forumPostsEl = document.getElementById("forum-posts");
+
     forumPostsEl.innerHTML = posts.length ? posts.map(p => `
         <div class="forum-post">
             <div class="fp-header">
-                <span class="fp-cat">${catLabels[p.cat] || p.cat}</span>
+                <span class="fp-cat">${CAT_LABELS[p.cat] || p.cat}</span>
                 <div style="display:flex;align-items:center;gap:8px">
                     <span class="fp-date">${p.date}</span>
-                    ${isAdmin ? `<button class="fp-delete" data-id="${p.id}" title="Supprimer">🗑️</button>` : ""}
+                    ${isAdmin || p.author_id === user?.id ? `<button class="fp-delete" data-id="${p.id}" title="Supprimer">🗑️</button>` : ""}
                 </div>
             </div>
             <h3 class="fp-title">${escapeHtml(p.title)}</h3>
             <p class="fp-body">${escapeHtml(p.body)}</p>
             <div class="fp-footer">
-                <span class="fp-author">👤 ${escapeHtml(p.author)}</span>
-                <button class="fp-like" data-id="${p.id}">❤️ ${p.likes}</button>
+                <span class="fp-author">${escapeHtml(p.author_avatar || "👤")} ${escapeHtml(p.author)}</span>
+                <button class="fp-like" data-id="${p.id}" data-likes="${p.likes}">❤️ ${p.likes}</button>
                 <span class="fp-replies-count">💬 ${p.replies.length} réponse${p.replies.length !== 1 ? "s" : ""}</span>
             </div>
             ${p.replies.length ? `
@@ -580,29 +610,31 @@ function renderForum() {
 
     staggerIn(forumPostsEl, ".forum-post");
 
-    document.querySelectorAll(".fp-like").forEach(btn => {
-        btn.addEventListener("click", () => {
-            const post = FORUM_POSTS.find(p => p.id === parseInt(btn.dataset.id));
-            if (post) { post.likes++; renderForum(); }
+    forumPostsEl.querySelectorAll(".fp-like").forEach(btn => {
+        btn.addEventListener("click", async () => {
+            const currentLikes = parseInt(btn.dataset.likes);
+            btn.disabled = true;
+            await likeForumPost(btn.dataset.id, currentLikes);
+            renderForum();
         });
     });
-    document.querySelectorAll(".fp-delete").forEach(btn => {
-        btn.addEventListener("click", () => {
-            const idx = FORUM_POSTS.findIndex(p => p.id === parseInt(btn.dataset.id));
-            if (idx !== -1) {
-                FORUM_POSTS.splice(idx, 1);
-                renderForum();
-                showToast("Discussion supprimée.", "info");
-            }
+    forumPostsEl.querySelectorAll(".fp-delete").forEach(btn => {
+        btn.addEventListener("click", async () => {
+            btn.disabled = true;
+            await deleteForumPost(btn.dataset.id);
+            showToast("Discussion supprimée.", "info");
+            renderForum();
         });
     });
 }
 
-function addPost(author, cat, title, body) {
-    FORUM_POSTS.unshift({
-        id: Date.now(), author, cat, title, body,
-        date: new Date().toLocaleDateString("fr-FR"),
-        likes: 0, replies: []
+async function addPost(author, cat, title, body) {
+    const user = getCurrentUser();
+    await addForumPost({
+        author,
+        authorAvatar: user?.avatar || "🎓",
+        authorId:     user?.id    || null,
+        cat, title, body
     });
     renderForum();
 }
@@ -636,137 +668,105 @@ function switchAdminTab(tab) {
 }
 
 function renderAdminOverview() {
-    const users    = getAllUsersWithStats();
-    const allDone  = users.reduce((s, u) => s + u.quizCount, 0);
-    const allLess  = users.reduce((s, u) => s + u.lessonsRead, 0);
     const el = document.getElementById("admin-overview");
-    el.innerHTML = `
-    <div class="admin-stats-grid">
-        <div class="admin-stat-card">
-            <div class="asc-icon">👥</div>
-            <div class="asc-val">${users.length}</div>
-            <div class="asc-label">Utilisateurs inscrits</div>
-        </div>
-        <div class="admin-stat-card">
-            <div class="asc-icon">📝</div>
-            <div class="asc-val">${allDone}</div>
-            <div class="asc-label">Quiz complétés (total)</div>
-        </div>
-        <div class="admin-stat-card">
-            <div class="asc-icon">📖</div>
-            <div class="asc-val">${allLess}</div>
-            <div class="asc-label">Leçons lues (total)</div>
-        </div>
-        <div class="admin-stat-card">
-            <div class="asc-icon">💬</div>
-            <div class="asc-val">${FORUM_POSTS.length}</div>
-            <div class="asc-label">Discussions forum</div>
-        </div>
-        <div class="admin-stat-card">
-            <div class="asc-icon">📚</div>
-            <div class="asc-val">${getAllCourses().length}</div>
-            <div class="asc-label">Leçons disponibles</div>
-        </div>
-        <div class="admin-stat-card">
-            <div class="asc-icon">🎯</div>
-            <div class="asc-val">${QUIZZES.length}</div>
-            <div class="asc-label">Quiz disponibles</div>
-        </div>
-    </div>`;
+    el.innerHTML = '<p class="empty-msg" style="opacity:.5">⏳ Chargement…</p>';
+    Promise.all([getAllUsersWithStats(), getForumPosts()]).then(([users, posts]) => {
+        const allDone = users.reduce((s, u) => s + u.quizCount, 0);
+        const allLess = users.reduce((s, u) => s + u.lessonsRead, 0);
+        el.innerHTML = `
+        <div class="admin-stats-grid">
+            <div class="admin-stat-card"><div class="asc-icon">👥</div><div class="asc-val">${users.length}</div><div class="asc-label">Utilisateurs inscrits</div></div>
+            <div class="admin-stat-card"><div class="asc-icon">📝</div><div class="asc-val">${allDone}</div><div class="asc-label">Quiz complétés (total)</div></div>
+            <div class="admin-stat-card"><div class="asc-icon">📖</div><div class="asc-val">${allLess}</div><div class="asc-label">Leçons lues (total)</div></div>
+            <div class="admin-stat-card"><div class="asc-icon">💬</div><div class="asc-val">${posts.length}</div><div class="asc-label">Discussions forum</div></div>
+            <div class="admin-stat-card"><div class="asc-icon">📚</div><div class="asc-val">${getAllCourses().length}</div><div class="asc-label">Leçons disponibles</div></div>
+            <div class="admin-stat-card"><div class="asc-icon">🎯</div><div class="asc-val">${QUIZZES.length}</div><div class="asc-label">Quiz disponibles</div></div>
+        </div>`;
+    });
 }
 
 function renderAdminUsers() {
-    const users = getAllUsersWithStats();
-    const me    = getCurrentUser();
-    const el    = document.getElementById("admin-users");
-    el.innerHTML = `
-    <div class="admin-table-wrap">
-        <table class="admin-table">
-            <thead>
-                <tr>
-                    <th>Utilisateur</th>
-                    <th>Rôle</th>
-                    <th>Quiz faits</th>
-                    <th>Précision</th>
-                    <th>Leçons lues</th>
-                    <th>Membre depuis</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-            ${users.map(u => `
-                <tr class="${u.id === me.id ? "me-row" : ""}">
-                    <td>
-                        <span class="at-avatar">${u.avatar}</span>
-                        <div>
-                            <strong>${escapeHtml(u.name)}</strong>
-                            <small>@${escapeHtml(u.username)}</small>
-                        </div>
-                    </td>
-                    <td><span class="role-badge ${u.role === "admin" ? "admin" : ""}">${u.role === "admin" ? "🛠️ Admin" : "🎓 Élève"}</span></td>
-                    <td>${u.quizCount} / ${QUIZZES.length}</td>
-                    <td>${u.accuracy !== null ? u.accuracy + "%" : "—"}</td>
-                    <td>${u.lessonsRead} / ${getAllCourses().length}</td>
-                    <td>${u.createdAt}</td>
-                    <td>
-                        ${u.id !== me.id ? `
-                        <button class="btn-sm admin-role-btn" data-uid="${u.id}" data-role="${u.role}">
-                            ${u.role === "admin" ? "→ Élève" : "→ Admin"}
-                        </button>
-                        <button class="btn-sm admin-del-btn" data-uid="${u.id}" style="background:#fef2f2;color:#ef4444">Supprimer</button>
-                        ` : '<span style="color:#94a3b8;font-size:0.8rem">C\'est vous</span>'}
-                    </td>
-                </tr>`).join("")}
-            </tbody>
-        </table>
-    </div>`;
+    const el = document.getElementById("admin-users");
+    el.innerHTML = '<p class="empty-msg" style="opacity:.5">⏳ Chargement…</p>';
+    getAllUsersWithStats().then(users => {
+        const me = getCurrentUser();
+        el.innerHTML = `
+        <div class="admin-table-wrap">
+            <table class="admin-table">
+                <thead><tr>
+                    <th>Utilisateur</th><th>Rôle</th><th>Quiz faits</th>
+                    <th>Précision</th><th>Leçons lues</th><th>Membre depuis</th><th>Actions</th>
+                </tr></thead>
+                <tbody>
+                ${users.map(u => `
+                    <tr class="${u.id === me?.id ? "me-row" : ""}">
+                        <td>
+                            <span class="at-avatar">${u.avatar}</span>
+                            <div><strong>${escapeHtml(u.name)}</strong><small>@${escapeHtml(u.username)}</small></div>
+                        </td>
+                        <td><span class="role-badge ${u.role === "admin" ? "admin" : ""}">${u.role === "admin" ? "🛠️ Admin" : "🎓 Élève"}</span></td>
+                        <td>${u.quizCount} / ${QUIZZES.length}</td>
+                        <td>${u.accuracy !== null ? u.accuracy + "%" : "—"}</td>
+                        <td>${u.lessonsRead} / ${getAllCourses().length}</td>
+                        <td>${new Date(u.created_at).toLocaleDateString("fr-FR")}</td>
+                        <td>
+                            ${u.id !== me?.id ? `
+                            <button class="btn-sm admin-role-btn" data-uid="${u.id}" data-role="${u.role}">
+                                ${u.role === "admin" ? "→ Élève" : "→ Admin"}
+                            </button>
+                            <button class="btn-sm admin-del-btn" data-uid="${u.id}" style="background:#fef2f2;color:#ef4444">Supprimer</button>
+                            ` : '<span style="color:#94a3b8;font-size:0.8rem">C\'est vous</span>'}
+                        </td>
+                    </tr>`).join("")}
+                </tbody>
+            </table>
+        </div>`;
 
-    el.querySelectorAll(".admin-role-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-            const uid     = parseInt(btn.dataset.uid);
-            const newRole = btn.dataset.role === "admin" ? "user" : "admin";
-            updateUserProfile(uid, { role: newRole });
-            renderAdminUsers();
+        el.querySelectorAll(".admin-role-btn").forEach(btn => {
+            btn.addEventListener("click", async () => {
+                const newRole = btn.dataset.role === "admin" ? "user" : "admin";
+                btn.disabled = true;
+                await updateUserProfile(btn.dataset.uid, { role: newRole });
+                renderAdminUsers();
+            });
         });
-    });
-    el.querySelectorAll(".admin-del-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-            deleteUser(parseInt(btn.dataset.uid));
-            renderAdminUsers();
-            renderAdminOverview();
-            showToast("Utilisateur supprimé.", "info");
+        el.querySelectorAll(".admin-del-btn").forEach(btn => {
+            btn.addEventListener("click", async () => {
+                btn.disabled = true;
+                await deleteUser(btn.dataset.uid);
+                renderAdminUsers();
+                renderAdminOverview();
+                showToast("Utilisateur supprimé.", "info");
+            });
         });
     });
 }
 
 function renderAdminForum() {
     const el = document.getElementById("admin-forum");
-    const catLabels = {
-        maths: "📐 Maths", francais: "📖 Français", histgeo: "🗺️ Histoire-Géo",
-        svt: "🌿 SVT", physchim: "⚗️ Physique-Chimie", anglais: "🌍 Anglais", autre: "💬 Autre"
-    };
-    el.innerHTML = `
-    <div class="admin-forum-list">
-        ${FORUM_POSTS.map(p => `
-        <div class="admin-post-row">
-            <div class="apr-info">
-                <span class="fp-cat">${catLabels[p.cat] || p.cat}</span>
-                <strong>${escapeHtml(p.title)}</strong>
-                <span>par ${escapeHtml(p.author)} · ${p.date} · ❤️ ${p.likes} · 💬 ${p.replies.length}</span>
-            </div>
-            <button class="btn-sm admin-del-post" data-id="${p.id}" style="background:#fef2f2;color:#ef4444">🗑️ Supprimer</button>
-        </div>`).join("") || '<p class="empty-msg">Aucune discussion.</p>'}
-    </div>`;
+    el.innerHTML = '<p class="empty-msg" style="opacity:.5">⏳ Chargement…</p>';
+    getForumPosts().then(posts => {
+        el.innerHTML = `
+        <div class="admin-forum-list">
+            ${posts.map(p => `
+            <div class="admin-post-row">
+                <div class="apr-info">
+                    <span class="fp-cat">${CAT_LABELS[p.cat] || p.cat}</span>
+                    <strong>${escapeHtml(p.title)}</strong>
+                    <span>par ${escapeHtml(p.author)} · ${p.date} · ❤️ ${p.likes} · 💬 ${p.replies.length}</span>
+                </div>
+                <button class="btn-sm admin-del-post" data-id="${p.id}" style="background:#fef2f2;color:#ef4444">🗑️ Supprimer</button>
+            </div>`).join("") || '<p class="empty-msg">Aucune discussion.</p>'}
+        </div>`;
 
-    el.querySelectorAll(".admin-del-post").forEach(btn => {
-        btn.addEventListener("click", () => {
-            const idx = FORUM_POSTS.findIndex(p => p.id === parseInt(btn.dataset.id));
-            if (idx !== -1) {
-                FORUM_POSTS.splice(idx, 1);
+        el.querySelectorAll(".admin-del-post").forEach(btn => {
+            btn.addEventListener("click", async () => {
+                btn.disabled = true;
+                await deleteForumPost(btn.dataset.id);
                 renderAdminForum();
                 renderAdminOverview();
                 showToast("Discussion supprimée.", "info");
-            }
+            });
         });
     });
 }
@@ -809,8 +809,10 @@ function renderAdminCourses() {
         btn.addEventListener("click", () => openCourseModal(btn.dataset.cid));
     });
     el.querySelectorAll(".acr-del").forEach(btn => {
-        btn.addEventListener("click", () => {
-            deleteCustomCourse(btn.dataset.cid);
+        btn.addEventListener("click", async () => {
+            btn.disabled = true;
+            await deleteCustomCourse(btn.dataset.cid);
+            _customCourses = await getCustomCourses();
             renderAdminCourses();
             renderAdminOverview();
             showToast("Cours supprimé.", "info");
@@ -859,7 +861,7 @@ function openCourseModal(id) {
     modal.classList.remove("hidden");
 }
 
-function saveCourseFromModal() {
+async function saveCourseFromModal() {
     const title   = document.getElementById("cm-title").value.trim();
     const subject = document.getElementById("cm-subject").value;
     const level   = document.getElementById("cm-level").value;
@@ -897,7 +899,8 @@ function saveCourseFromModal() {
         _raw: { intro, formula, tip, sections }
     };
 
-    saveCustomCourse(course);
+    await saveCustomCourse(course);
+    _customCourses = await getCustomCourses();
     document.getElementById("course-modal").classList.add("hidden");
     renderAdminCourses();
     renderAdminOverview();
@@ -909,7 +912,7 @@ function saveCourseFromModal() {
 // ============================================================
 function renderAdminExercices() {
     const el     = document.getElementById("admin-exercices");
-    const custom = getCustomExercises();
+    const custom = _customExercises;
     const all    = typeof getAllExercises === "function" ? getAllExercises() : [];
     el.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
@@ -943,8 +946,10 @@ function renderAdminExercices() {
         btn.addEventListener("click", () => openExoModal(btn.dataset.eid))
     );
     el.querySelectorAll(".acr-del-exo").forEach(btn =>
-        btn.addEventListener("click", () => {
-            deleteCustomExercise(btn.dataset.eid);
+        btn.addEventListener("click", async () => {
+            btn.disabled = true;
+            await deleteCustomExercise(btn.dataset.eid);
+            _customExercises = await getCustomExercises();
             renderAdminExercices();
             showToast("Exercice supprimé.", "info");
         })
@@ -1008,7 +1013,7 @@ function addExoRowBlock(label, cells) {
     container.appendChild(div);
 }
 
-function saveExoFromModal() {
+async function saveExoFromModal() {
     const title   = document.getElementById("em-title").value.trim();
     const palette = document.getElementById("em-palette").value.trim()
                         .split("\n").map(s => s.trim()).filter(Boolean);
@@ -1051,7 +1056,8 @@ function saveExoFromModal() {
         rows,
     };
 
-    saveCustomExercise(exo);
+    await saveCustomExercise(exo);
+    _customExercises = await getCustomExercises();
     document.getElementById("exo-modal").classList.add("hidden");
     renderAdminExercices();
     showToast(existingId ? "Exercice mis à jour !" : "Exercice créé !", "success");
@@ -1076,9 +1082,10 @@ function updateHeroStats() {
 // ============================================================
 // EVENT LISTENERS
 // ============================================================
-document.addEventListener("DOMContentLoaded", () => {
-    authInit();
-    loadState();
+document.addEventListener("DOMContentLoaded", async () => {
+    await authInit();
+    await loadState();
+    await loadCustomContent();
     renderHeaderAuth();
 
     // --- Nav links ---
@@ -1163,7 +1170,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (e.target === document.getElementById("post-modal"))
             document.getElementById("post-modal").classList.add("hidden");
     });
-    document.getElementById("submit-post").addEventListener("click", () => {
+    document.getElementById("submit-post").addEventListener("click", async () => {
         const author = document.getElementById("post-author").value.trim();
         const cat    = document.getElementById("post-cat").value;
         const title  = document.getElementById("post-title").value.trim();
@@ -1172,7 +1179,10 @@ document.addEventListener("DOMContentLoaded", () => {
             showToast("Merci de remplir tous les champs.", "warn");
             return;
         }
-        addPost(author, cat, title, body);
+        const btn = document.getElementById("submit-post");
+        btn.disabled = true;
+        await addPost(author, cat, title, body);
+        btn.disabled = false;
         document.getElementById("post-modal").classList.add("hidden");
         document.getElementById("post-title").value = "";
         document.getElementById("post-body").value  = "";
