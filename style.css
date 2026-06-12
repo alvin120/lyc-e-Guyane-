@@ -490,6 +490,45 @@ blockquote {
 .empty-msg { text-align: center; color: #94a3b8; padding: 40px 0; font-size: 0.95rem; }
 
 /* ============================================================
+   LEADERBOARD
+   ============================================================ */
+.leaderboard-wrap { margin-top: 8px; }
+.lb-list { display: flex; flex-direction: column; gap: 8px; }
+.lb-row {
+    display: flex; align-items: center; gap: 12px;
+    background: #fff; border: 1px solid #e2e8f0;
+    border-radius: 12px; padding: 12px 16px;
+    transition: box-shadow .18s;
+}
+.lb-row:hover { box-shadow: 0 2px 12px rgba(0,0,0,.07); }
+.lb-row.lb-me { border-color: var(--blue); background: #eff6ff; }
+.lb-rank  { font-size: 1.3rem; min-width: 36px; text-align: center; }
+.lb-avatar { font-size: 1.4rem; }
+.lb-info  { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.lb-name  { font-weight: 600; font-size: .95rem; color: #1e293b; }
+.lb-detail { font-size: .78rem; color: #64748b; }
+.lb-score-badge { font-weight: 700; font-size: 1rem; }
+
+/* ============================================================
+   BADGES — améliorations
+   ============================================================ */
+.badges-summary {
+    grid-column: 1 / -1;
+    font-size: .85rem; color: #64748b; font-weight: 500;
+    margin-bottom: 4px;
+}
+.badge-card.unlocked {
+    box-shadow: 0 4px 16px rgba(37,99,235,.12);
+    border-color: var(--blue);
+}
+.badge-card.unlocked .badge-icon { animation: badge-pop .4s ease; will-change: transform; }
+@keyframes badge-pop {
+    0%   { transform: scale(0.8); }
+    60%  { transform: scale(1.15); }
+    100% { transform: scale(1); }
+}
+
+/* ============================================================
    RESPONSIVE
    ============================================================ */
 @media (max-width: 900px) {

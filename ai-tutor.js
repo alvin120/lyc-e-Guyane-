@@ -22,6 +22,22 @@ const AiTutor = (() => {
         return ctx;
     }
 
+    function getCourseContext() {
+        if (typeof currentLesson === 'undefined' || !currentLesson) return null;
+        let ctx = `Leçon actuellement ouverte : "${currentLesson.title}"`;
+        if (currentLesson.summary) ctx += `\nRésumé : ${currentLesson.summary}`;
+        if (currentLesson.subject) ctx += `\nMatière : ${currentLesson.subject}`;
+        if (currentLesson.level)   ctx += `\nNiveau : ${currentLesson.level}`;
+        if (currentLesson.content) {
+            // Extraire le texte brut du HTML de la leçon (max 800 chars)
+            const tmp = document.createElement('div');
+            tmp.innerHTML = currentLesson.content;
+            const text = tmp.textContent.replace(/\s+/g, ' ').trim().slice(0, 800);
+            ctx += `\nContenu de la leçon :\n${text}`;
+        }
+        return ctx;
+    }
+
     function safeEscape(str) {
         return String(str)
             .replace(/&/g, '&amp;').replace(/</g, '&lt;')
@@ -33,15 +49,15 @@ const AiTutor = (() => {
         if (!container) return;
 
         if (chatMessages.length === 0) {
-            const hasExo = typeof exoCurrent !== 'undefined' && exoCurrent;
+            const hasExo    = typeof exoCurrent !== 'undefined' && exoCurrent;
+            const hasLesson = typeof currentLesson !== 'undefined' && currentLesson;
+            let contextMsg  = "Tu as une question sur le cours ou le programme ? Je suis là pour t'aider !";
+            if (hasExo)    contextMsg = `Je vois que tu travailles sur l'exercice <strong>"${safeEscape(exoCurrent.title)}"</strong>. Pose-moi ta question !`;
+            else if (hasLesson) contextMsg = `Je vois que tu lis <strong>"${safeEscape(currentLesson.title)}"</strong>. Des questions sur cette leçon ?`;
             container.innerHTML = `
                 <div class="ai-welcome">
                     <div class="ai-welcome-icon">🤖</div>
-                    <p>Bonjour ! Je suis ton <strong>Professeur IA</strong>.<br>
-                    ${hasExo
-                        ? `Je vois que tu travailles sur <strong>"${safeEscape(exoCurrent.title)}"</strong>. Pose-moi ta question !`
-                        : "Tu as une question sur le cours ? Pose-la moi, je suis là pour t'aider !"
-                    }</p>
+                    <p>Bonjour ! Je suis ton <strong>Professeur IA</strong>.<br>${contextMsg}</p>
                 </div>`;
             return;
         }
@@ -138,14 +154,17 @@ const AiTutor = (() => {
         isTyping = true;
         renderMessages();
 
-        const exoContext = getExerciseContext();
+        const exoContext    = getExerciseContext();
+        const courseContext = getCourseContext();
+        const activeContext = exoContext || courseContext;
+
         const systemPrompt = [
             'Tu es "Professeur IA", un assistant pédagogique de la plateforme EduGuyane pour les lycéens de Guyane (France).',
             'Ton rôle : répondre clairement et complètement à toutes les questions sur les cours, les exercices et les notions du programme lycée.',
             'Tu expliques les concepts, donnes des exemples concrets, corriges les erreurs et fournis les réponses aux questions posées.',
             'Tu réponds en français, avec un ton encourageant et adapté à des lycéens de 15-18 ans.',
             'Sois clair et précis. Utilise des listes ou étapes numérotées quand c\'est utile. Quelques emojis pour dynamiser.',
-            exoContext ? `\nContexte de l'exercice en cours :\n${exoContext}` : ''
+            activeContext ? `\n--- Contexte actuel ---\n${activeContext}` : ''
         ].filter(Boolean).join('\n');
 
         try {

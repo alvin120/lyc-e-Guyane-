@@ -13,6 +13,7 @@ let currentQuestion = 0;
 let quizAnswers = [];
 let forumFilter = "all";
 let selectedAvatar = "🎓";
+let currentLesson = null; // leçon ouverte — lue par le Professeur IA
 
 const state = {
     quizDone: {},
@@ -76,6 +77,7 @@ function navigateTo(view) {
     if (link) link.classList.add("active");
 
     currentView = view;
+    if (view !== "cours") currentLesson = null; // effacer le contexte cours quand on navigue
     window.scrollTo({ top: 0, behavior: "smooth" });
     closeUserDropdown();
     closeNav();
@@ -330,6 +332,7 @@ function renderCoursList() {
 function openLesson(id) {
     const lesson = getAllCourses().find(c => c.id === id);
     if (!lesson) return;
+    currentLesson = lesson;
     state.lessonsRead[lesson.id] = true;
     saveState();
     document.getElementById("cours-list").classList.add("hidden");
@@ -538,20 +541,66 @@ function renderProgression() {
         </div>`;
     }).join("");
 
+    const lessonsCount = Object.keys(state.lessonsRead || {}).length;
     const badges = [
-        { icon: "🎯", name: "Premier quiz",   desc: "Terminer son 1er quiz",            unlocked: totalDone >= 1 },
-        { icon: "💯", name: "Parfait !",       desc: "Obtenir 100% dans un quiz",        unlocked: done.some(d => d.score === d.total) },
-        { icon: "📚", name: "Érudit",          desc: "Terminer 5 quiz",                  unlocked: totalDone >= 5 },
-        { icon: "🏆", name: "Champion",        desc: "Terminer tous les quiz",           unlocked: totalDone >= QUIZZES.length },
-        { icon: "🌿", name: "Guyanais",        desc: "Réussir le quiz Guyane à 80%+",    unlocked: state.quizDone["qhg1"] && (state.quizDone["qhg1"].score / state.quizDone["qhg1"].total) >= 0.8 },
-        { icon: "📐", name: "Mathématicien",   desc: "Réussir tous les quiz de maths",   unlocked: QUIZZES.filter(q => q.subject === "maths").every(q => state.quizDone[q.id]) },
+        { icon: "🎯", name: "Premier quiz",    desc: "Terminer son 1er quiz",                unlocked: totalDone >= 1 },
+        { icon: "📖", name: "Première leçon",  desc: "Lire une leçon pour la 1ère fois",     unlocked: lessonsCount >= 1 },
+        { icon: "💯", name: "Parfait !",        desc: "Obtenir 100% dans un quiz",            unlocked: done.some(d => d.score === d.total) },
+        { icon: "📚", name: "Érudit",           desc: "Terminer 5 quiz",                      unlocked: totalDone >= 5 },
+        { icon: "🔬", name: "Curieux",          desc: "Lire 5 leçons",                        unlocked: lessonsCount >= 5 },
+        { icon: "🌿", name: "Guyanais",         desc: "Réussir le quiz Guyane à 80%+",        unlocked: !!(state.quizDone["qhg1"] && (state.quizDone["qhg1"].score / state.quizDone["qhg1"].total) >= 0.8) },
+        { icon: "📐", name: "Mathématicien",    desc: "Réussir tous les quiz de maths",       unlocked: QUIZZES.filter(q => q.subject === "maths").every(q => state.quizDone[q.id]) },
+        { icon: "🌍", name: "Polyglotte",       desc: "Faire un quiz Anglais",                unlocked: QUIZZES.filter(q => q.subject === "anglais").some(q => state.quizDone[q.id]) },
+        { icon: "⚗️", name: "Scientifique",     desc: "Terminer un quiz SVT et Physique",     unlocked: QUIZZES.filter(q => q.subject === "svt" || q.subject === "physchim").some(q => state.quizDone[q.id]) },
+        { icon: "🏆", name: "Champion",         desc: "Terminer tous les quiz disponibles",   unlocked: totalDone >= QUIZZES.length },
+        { icon: "🎓", name: "Bibliothèque",     desc: "Lire 10 leçons différentes",           unlocked: lessonsCount >= 10 },
+        { icon: "⭐", name: "Excellence",       desc: "80%+ de précision sur 5+ quiz",        unlocked: totalDone >= 5 && (accuracy || 0) >= 80 },
     ];
-    document.getElementById("badges-grid").innerHTML = badges.map(b => `
+    const unlockedBadges = badges.filter(b => b.unlocked).length;
+    document.getElementById("badges-grid").innerHTML = `
+        <div class="badges-summary">${unlockedBadges} / ${badges.length} badges débloqués</div>
+        ${badges.map(b => `
         <div class="badge-card ${b.unlocked ? "unlocked" : "locked"}">
             <div class="badge-icon">${b.unlocked ? b.icon : "🔒"}</div>
             <div class="badge-name">${b.name}</div>
             <div class="badge-desc">${b.desc}</div>
-        </div>`).join("");
+        </div>`).join("")}`;
+
+    renderLeaderboard();
+}
+
+function renderLeaderboard() {
+    const el = document.getElementById("leaderboard");
+    if (!el) return;
+    el.innerHTML = '<p class="empty-msg" style="opacity:.5">⏳ Chargement…</p>';
+    const me = getCurrentUser();
+    getAllUsersWithStats().then(users => {
+        const ranked = users
+            .filter(u => u.quizCount > 0)
+            .sort((a, b) => {
+                const scoreA = (a.accuracy || 0) * 10 + a.quizCount;
+                const scoreB = (b.accuracy || 0) * 10 + b.quizCount;
+                return scoreB - scoreA;
+            })
+            .slice(0, 10);
+
+        if (!ranked.length) {
+            el.innerHTML = '<p class="empty-msg">Aucun classement disponible — complète des quiz pour apparaître ici !</p>';
+            return;
+        }
+        const medals = ["🥇", "🥈", "🥉"];
+        el.innerHTML = `<div class="lb-list">${ranked.map((u, i) => `
+            <div class="lb-row ${me && u.id === me.id ? "lb-me" : ""}">
+                <span class="lb-rank">${medals[i] || `#${i + 1}`}</span>
+                <span class="lb-avatar">${u.avatar}</span>
+                <div class="lb-info">
+                    <span class="lb-name">${escapeHtml(u.name)}</span>
+                    <span class="lb-detail">${u.quizCount} quiz · ${u.accuracy !== null ? u.accuracy + "% précision" : ""}</span>
+                </div>
+                <span class="lb-score-badge" style="color:${u.accuracy >= 80 ? '#22c55e' : u.accuracy >= 50 ? '#f59e0b' : '#ef4444'}">${u.accuracy !== null ? u.accuracy + "%" : "—"}</span>
+            </div>`).join("")}
+        </div>`;
+    });
 }
 
 // ============================================================
