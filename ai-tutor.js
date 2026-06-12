@@ -68,44 +68,58 @@ const AiTutor = (() => {
 
     async function callAI(messages) {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 15000);
+        const timeout = setTimeout(() => controller.abort(), 20000);
 
         try {
-            const response = await fetch('https://text.pollinations.ai/', {
+            // Priorité : fonction serverless Vercel (Groq, fiable)
+            const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    messages,
-                    model: 'openai',
-                    temperature: 0.7,
-                    max_tokens: 500,
-                    private: true
-                }),
+                body: JSON.stringify({ messages }),
                 signal: controller.signal
             });
 
             clearTimeout(timeout);
 
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-            const text = await response.text();
-
-            // Pollinations retourne du texte brut ou parfois du JSON
-            try {
-                const json = JSON.parse(text);
-                // Format OpenAI
-                if (json.choices?.[0]?.message?.content) return json.choices[0].message.content.trim();
-                // Format simple
-                if (json.content) return String(json.content).trim();
-                if (json.text) return String(json.text).trim();
-                if (json.response) return String(json.response).trim();
-            } catch (_) {
-                // Ce n'est pas du JSON — c'est du texte brut, c'est normal
+            if (response.status === 503) {
+                // Clé Groq non configurée → repli Pollinations
+                return await callPollinations(messages);
             }
 
+            if (!response.ok) throw new Error(`Erreur ${response.status}`);
+
+            const data = await response.json();
+            if (!data.reply) throw new Error('Réponse vide');
+            return data.reply;
+
+        } catch (err) {
+            clearTimeout(timeout);
+            if (err.name === 'AbortError') throw err;
+            // Repli Pollinations si la fonction Vercel n'est pas disponible (dev local, etc.)
+            return await callPollinations(messages);
+        }
+    }
+
+    async function callPollinations(messages) {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 15000);
+        try {
+            const response = await fetch('https://text.pollinations.ai/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ messages, model: 'openai', temperature: 0.7, max_tokens: 500, private: true }),
+                signal: controller.signal
+            });
+            clearTimeout(timeout);
+            if (!response.ok) throw new Error(`Pollinations HTTP ${response.status}`);
+            const text = await response.text();
+            try {
+                const json = JSON.parse(text);
+                if (json.choices?.[0]?.message?.content) return json.choices[0].message.content.trim();
+                if (json.content) return String(json.content).trim();
+            } catch (_) {}
             if (text.trim()) return text.trim();
             throw new Error('Réponse vide');
-
         } catch (err) {
             clearTimeout(timeout);
             throw err;
