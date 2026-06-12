@@ -14,6 +14,8 @@ let quizAnswers = [];
 let forumFilter = "all";
 let selectedAvatar = "🎓";
 let currentLesson = null; // leçon ouverte — lue par le Professeur IA
+let _suppressHashPush = false;
+const _VALID_VIEWS = ['accueil','cours','quiz','exercices','progression','forum','matieres','espaces','profil','admin'];
 
 const state = {
     quizDone: {},
@@ -93,6 +95,8 @@ function navigateTo(view) {
     if (view === "matieres")       renderMatieres();
     if (view === "matiere-detail") renderMatiereDetail();
     if (view === "espaces")        renderEspaces();
+
+    if (!_suppressHashPush) history.pushState(null, '', '#' + view);
 }
 
 function closeNav() {
@@ -329,6 +333,20 @@ function renderCoursList() {
     });
 }
 
+function extractYouTubeId(url) {
+    if (!url) return null;
+    const m = url.match(/(?:[?&]v=|youtu\.be\/|\/embed\/)([A-Za-z0-9_-]{11})/);
+    return m ? m[1] : null;
+}
+
+function getLessonVideoHtml(lesson) {
+    const url = lesson.videoUrl;
+    if (!url) return '';
+    const id = extractYouTubeId(url);
+    if (!id) return '';
+    return `<div class="lesson-video-wrap"><iframe src="https://www.youtube.com/embed/${id}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen title="Vidéo du cours"></iframe></div>`;
+}
+
 function openLesson(id) {
     const lesson = getAllCourses().find(c => c.id === id);
     if (!lesson) return;
@@ -338,7 +356,8 @@ function openLesson(id) {
     document.getElementById("cours-list").classList.add("hidden");
     const detail = document.getElementById("lesson-detail");
     detail.classList.remove("hidden");
-    document.getElementById("lesson-content").innerHTML = lesson.content;
+    document.getElementById("lesson-content").innerHTML = getLessonVideoHtml(lesson) + lesson.content;
+    if (!_suppressHashPush) history.pushState(null, '', '#cours/' + lesson.id);
 }
 
 // ============================================================
@@ -878,6 +897,7 @@ function openCourseModal(id) {
     document.getElementById("cm-intro").value = "";
     document.getElementById("cm-formula").value = "";
     document.getElementById("cm-tip").value = "";
+    document.getElementById("cm-video").value = "";
     document.getElementById("cm-error").classList.add("hidden");
     document.querySelectorAll(".cm-sec-title").forEach(el => el.value = "");
     document.querySelectorAll(".cm-sec-body").forEach(el => el.value = "");
@@ -896,6 +916,7 @@ function openCourseModal(id) {
             document.getElementById("cm-intro").value   = course._raw.intro || "";
             document.getElementById("cm-formula").value = course._raw.formula || "";
             document.getElementById("cm-tip").value     = course._raw.tip || "";
+            document.getElementById("cm-video").value   = course.videoUrl || "";
             (course._raw.sections || []).forEach((sec, i) => {
                 const blocks = document.querySelectorAll(".cm-section-block");
                 if (blocks[i]) {
@@ -920,9 +941,10 @@ async function saveCourseFromModal() {
     }
     document.getElementById("cm-error").classList.add("hidden");
 
-    const intro   = document.getElementById("cm-intro").value.trim();
-    const formula = document.getElementById("cm-formula").value.trim();
-    const tip     = document.getElementById("cm-tip").value.trim();
+    const intro    = document.getElementById("cm-intro").value.trim();
+    const formula  = document.getElementById("cm-formula").value.trim();
+    const tip      = document.getElementById("cm-tip").value.trim();
+    const videoUrl = document.getElementById("cm-video").value.trim();
     const sections = [...document.querySelectorAll(".cm-section-block")].map(block => ({
         title: block.querySelector(".cm-sec-title").value.trim(),
         body:  block.querySelector(".cm-sec-body").value.trim()
@@ -945,6 +967,7 @@ async function saveCourseFromModal() {
         title,
         summary:  document.getElementById("cm-summary").value.trim(),
         content:  html,
+        videoUrl: videoUrl || undefined,
         _raw: { intro, formula, tip, sections }
     };
 
@@ -1179,6 +1202,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("back-to-list").addEventListener("click", () => {
         document.getElementById("cours-list").classList.remove("hidden");
         document.getElementById("lesson-detail").classList.add("hidden");
+        currentLesson = null;
+        history.pushState(null, '', '#cours');
     });
 
     // --- Quiz ---
@@ -1309,4 +1334,34 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("em-add-row").addEventListener("click", () => addExoRowBlock("", ""));
 
     updateHeroStats();
+
+    // --- Routage URL (hash-based) ---
+    window.addEventListener('popstate', () => {
+        _suppressHashPush = true;
+        const hash = window.location.hash.slice(1);
+        if (hash.startsWith('cours/')) {
+            navigateTo('cours');
+            openLesson(hash.slice(6));
+        } else if (_VALID_VIEWS.includes(hash)) {
+            navigateTo(hash);
+        } else {
+            navigateTo('accueil');
+        }
+        _suppressHashPush = false;
+    });
+
+    // Navigation initiale depuis l'URL (lien direct ou rechargement)
+    const _initHash = window.location.hash.slice(1);
+    if (_initHash) {
+        _suppressHashPush = true;
+        if (_initHash.startsWith('cours/')) {
+            navigateTo('cours');
+            openLesson(_initHash.slice(6));
+        } else if (_VALID_VIEWS.includes(_initHash)) {
+            navigateTo(_initHash);
+        }
+        _suppressHashPush = false;
+    } else {
+        history.replaceState(null, '', '#accueil');
+    }
 });
