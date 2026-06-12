@@ -6,14 +6,6 @@ const AiTutor = (() => {
     let chatMessages = [];
     let isTyping = false;
 
-    function getApiKey() {
-        return localStorage.getItem('eduguyane_ai_key') || '';
-    }
-
-    function setApiKey(key) {
-        localStorage.setItem('eduguyane_ai_key', key.trim());
-    }
-
     function getExerciseContext() {
         if (typeof exoCurrent === 'undefined' || !exoCurrent) return null;
         let ctx = `Exercice actuel : "${exoCurrent.title}"`;
@@ -48,7 +40,7 @@ const AiTutor = (() => {
                     <p>Bonjour ! Je suis ton <strong>Professeur IA</strong>.<br>
                     ${hasExo
                         ? `Je vois que tu travailles sur <strong>"${safeEscape(exoCurrent.title)}"</strong>. Pose-moi ta question !`
-                        : "Tu bloques sur un exercice ? Pose-moi ta question, je suis là pour t'aider !"
+                        : "Tu as une question sur le cours ? Pose-la moi, je suis là pour t'aider !"
                     }</p>
                 </div>`;
             return;
@@ -74,6 +66,52 @@ const AiTutor = (() => {
         container.scrollTop = container.scrollHeight;
     }
 
+    async function callAI(messages) {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 15000);
+
+        try {
+            const response = await fetch('https://text.pollinations.ai/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    messages,
+                    model: 'openai',
+                    temperature: 0.7,
+                    max_tokens: 500,
+                    private: true
+                }),
+                signal: controller.signal
+            });
+
+            clearTimeout(timeout);
+
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            const text = await response.text();
+
+            // Pollinations retourne du texte brut ou parfois du JSON
+            try {
+                const json = JSON.parse(text);
+                // Format OpenAI
+                if (json.choices?.[0]?.message?.content) return json.choices[0].message.content.trim();
+                // Format simple
+                if (json.content) return String(json.content).trim();
+                if (json.text) return String(json.text).trim();
+                if (json.response) return String(json.response).trim();
+            } catch (_) {
+                // Ce n'est pas du JSON — c'est du texte brut, c'est normal
+            }
+
+            if (text.trim()) return text.trim();
+            throw new Error('Réponse vide');
+
+        } catch (err) {
+            clearTimeout(timeout);
+            throw err;
+        }
+    }
+
     async function sendMessage(text) {
         if (!text.trim() || isTyping) return;
 
@@ -89,45 +127,32 @@ const AiTutor = (() => {
         const exoContext = getExerciseContext();
         const systemPrompt = [
             'Tu es "Professeur IA", un assistant pédagogique de la plateforme EduGuyane pour les lycéens de Guyane (France).',
-            'Ton rôle : guider l\'élève sans jamais donner directement la réponse finale.',
-            'Tu utilises la méthode socratique : pose des questions, donne des indices progressifs, explique les concepts.',
+            'Ton rôle : répondre clairement et complètement à toutes les questions sur les cours, les exercices et les notions du programme lycée.',
+            'Tu expliques les concepts, donnes des exemples concrets, corriges les erreurs et fournis les réponses aux questions posées.',
             'Tu réponds en français, avec un ton encourageant et adapté à des lycéens de 15-18 ans.',
-            'Sois concis : 3-5 phrases maximum par réponse. Utilise quelques emojis pour être plus expressif.',
-            'Si l\'élève est proche de la bonne réponse, encourage-le. S\'il fait fausse route, redirige-le doucement.',
+            'Sois clair et précis. Utilise des listes ou étapes numérotées quand c\'est utile. Quelques emojis pour dynamiser.',
             exoContext ? `\nContexte de l'exercice en cours :\n${exoContext}` : ''
-        ].join('\n');
+        ].filter(Boolean).join('\n');
 
         try {
-            const response = await fetch('https://text.pollinations.ai/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    messages: [
-                        { role: 'system', content: systemPrompt },
-                        ...chatMessages.map(m => ({ role: m.role, content: m.content }))
-                    ],
-                    model: 'openai',
-                    temperature: 0.7,
-                    max_tokens: 350,
-                    private: true
-                })
-            });
-
-            if (!response.ok) throw new Error(`Erreur ${response.status}`);
-
-            const reply = await response.text();
+            const reply = await callAI([
+                { role: 'system', content: systemPrompt },
+                ...chatMessages.map(m => ({ role: m.role, content: m.content }))
+            ]);
 
             isTyping = false;
-            chatMessages.push({ role: 'assistant', content: reply.trim() || "Désolé, je n'ai pas pu répondre." });
+            chatMessages.push({ role: 'assistant', content: reply });
             renderMessages();
 
         } catch (err) {
             isTyping = false;
-            let errMsg = "⚠️ ";
-            if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
-                errMsg += "Impossible de joindre l'IA. Vérifie ta connexion internet.";
+            let errMsg;
+            if (err.name === 'AbortError') {
+                errMsg = '⚠️ La requête a pris trop de temps. Vérifie ta connexion et réessaie.';
+            } else if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+                errMsg = '⚠️ Impossible de joindre le Professeur IA. Vérifie ta connexion internet.';
             } else {
-                errMsg += "Service temporairement indisponible. Réessaie dans quelques secondes.";
+                errMsg = '⚠️ Service temporairement indisponible. Réessaie dans quelques secondes.';
             }
             chatMessages.push({ role: 'assistant', content: errMsg });
             renderMessages();
@@ -137,30 +162,14 @@ const AiTutor = (() => {
     function suggestHelp(customText) {
         const text = customText || (
             typeof exoCurrent !== 'undefined' && exoCurrent
-                ? `J'ai du mal avec l'exercice "${exoCurrent.title}". Peux-tu m'aider à comprendre ?`
-                : "Je n'arrive pas à comprendre cet exercice. Peux-tu m'expliquer ?"
+                ? `J'ai du mal avec l'exercice "${exoCurrent.title}". Peux-tu m'expliquer ?`
+                : "Je n'arrive pas à comprendre cette notion. Peux-tu m'expliquer ?"
         );
         const inputEl = document.getElementById('ai-input');
         if (inputEl) {
             inputEl.value = text;
             inputEl.focus();
         }
-    }
-
-    function showConfigPanel() {
-        const cfg = document.getElementById('ai-config');
-        const area = document.getElementById('ai-input-area');
-        if (cfg) cfg.classList.remove('hidden');
-        if (area) area.classList.add('hidden');
-        const inp = document.getElementById('ai-api-key-input');
-        if (inp) { inp.value = getApiKey(); setTimeout(() => inp.focus(), 50); }
-    }
-
-    function hideConfigPanel() {
-        const cfg = document.getElementById('ai-config');
-        const area = document.getElementById('ai-input-area');
-        if (cfg) cfg.classList.add('hidden');
-        if (area) area.classList.remove('hidden');
     }
 
     function clearChat() {
@@ -202,32 +211,9 @@ const AiTutor = (() => {
 
         document.getElementById('ai-close-btn')?.addEventListener('click', close);
 
-        document.getElementById('ai-cfg-btn')?.addEventListener('click', () => {
-            const cfg = document.getElementById('ai-config');
-            if (cfg?.classList.contains('hidden')) showConfigPanel();
-            else hideConfigPanel();
-        });
-
         document.getElementById('ai-clear-btn')?.addEventListener('click', () => {
             clearChat();
             if (typeof showToast === 'function') showToast('Conversation effacée.', 'info');
-        });
-
-        document.getElementById('ai-save-key')?.addEventListener('click', () => {
-            const val = document.getElementById('ai-api-key-input')?.value.trim();
-            if (val && val.length > 10) {
-                setApiKey(val);
-                hideConfigPanel();
-                if (typeof showToast === 'function') showToast('🔑 Clé API enregistrée !', 'success');
-            } else {
-                if (typeof showToast === 'function') showToast('Clé invalide. Elle doit commencer par AIza…', 'warn');
-            }
-        });
-
-        document.getElementById('ai-cancel-cfg')?.addEventListener('click', hideConfigPanel);
-
-        document.getElementById('ai-api-key-input')?.addEventListener('keydown', e => {
-            if (e.key === 'Enter') document.getElementById('ai-save-key')?.click();
         });
 
         document.getElementById('ai-send-btn')?.addEventListener('click', () => {
