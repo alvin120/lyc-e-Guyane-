@@ -21,7 +21,11 @@ const { MODES, buildSystemPrompt, getAgent } = AgentsConfig;
 
 // ── Réglages ───────────────────────────────────────────────
 const CLAUDE_MODEL = 'claude-opus-5';        // ← modèle des profs (voir README / .env.example)
-const GROQ_MODEL   = 'llama-3.1-8b-instant'; // ← repli, déjà utilisé par /api/chat
+
+// Groq retire régulièrement ses modèles (llama-3.1-8b-instant a disparu et
+// renvoie désormais un 404). On demande donc la liste à Groq et on prend le
+// premier modèle disponible dans cet ordre de préférence.
+const GROQ_PREFERENCES = ['llama-3.3-70b', 'llama-3.1-8b', 'llama-4', 'llama-3', 'mixtral', 'gemma'];
 const MAX_HISTORY  = 24;                     // nombre de messages d'historique conservés
 const MAX_CHARS    = 6000;                   // taille max d'un message élève (photo décrite, devoir collé…)
 
@@ -133,15 +137,44 @@ async function streamClaude({ res, agent, mode, system, messages, state }) {
 // ============================================================
 // FOURNISSEUR 2 — GROQ (repli)
 // ============================================================
+
+/** Modèle Groq retenu, mémorisé le temps de vie de la fonction. */
+let _groqModel = null;
+
+/** Demande à Groq la liste de ses modèles et retient le plus adapté. */
+async function resolveGroqModel(key) {
+    if (_groqModel) return _groqModel;
+
+    const r = await fetch('https://api.groq.com/openai/v1/models', {
+        headers: { 'Authorization': `Bearer ${key}` }
+    });
+    if (!r.ok) throw new Error(`Groq /models ${r.status}`);
+
+    const ids = ((await r.json()).data || []).map(m => m.id);
+    // Écarte ce qui n'est pas conversationnel (transcription, synthèse vocale, modération).
+    const conversationnels = ids.filter(id => !/whisper|tts|guard|embed|vision/i.test(id));
+
+    for (const pref of GROQ_PREFERENCES) {
+        const trouve = conversationnels.find(id => id.includes(pref));
+        if (trouve) { _groqModel = trouve; return trouve; }
+    }
+    if (!conversationnels.length) throw new Error('Groq : aucun modèle conversationnel disponible');
+    _groqModel = conversationnels[0];
+    return _groqModel;
+}
+
 async function streamGroq({ res, mode, system, messages, state }) {
+    const key = process.env.GROQ_API_KEY;
+    const model = await resolveGroqModel(key);
+
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
+            'Authorization': `Bearer ${key}`
         },
         body: JSON.stringify({
-            model: GROQ_MODEL,
+            model,
             messages: [{ role: 'system', content: system }, ...messages],
             temperature: 0.7,
             max_tokens: Math.min(mode.maxTokens, 2000),
@@ -150,6 +183,8 @@ async function streamGroq({ res, mode, system, messages, state }) {
     });
 
     if (!response.ok || !response.body) {
+        // Modèle retiré entre-temps : on oublie le choix mémorisé pour le prochain appel.
+        if (response.status === 404) _groqModel = null;
         throw new Error(`Groq ${response.status}`);
     }
 
@@ -177,7 +212,7 @@ async function streamGroq({ res, mode, system, messages, state }) {
             } catch (_) { /* fragment incomplet : ignoré */ }
         }
     }
-    return GROQ_MODEL;
+    return model;
 }
 
 // ============================================================
