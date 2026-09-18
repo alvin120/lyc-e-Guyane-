@@ -185,7 +185,8 @@ async function streamGroq({ res, mode, system, messages, state }) {
     if (!response.ok || !response.body) {
         // Modèle retiré entre-temps : on oublie le choix mémorisé pour le prochain appel.
         if (response.status === 404) _groqModel = null;
-        throw new Error(`Groq ${response.status}`);
+        const detail = await response.text().catch(() => '');
+        throw new Error(`Groq ${response.status} (${model}) : ${detail.slice(0, 300)}`);
     }
 
     // Groq parle le SSE d'OpenAI : on le retraduit dans notre format.
