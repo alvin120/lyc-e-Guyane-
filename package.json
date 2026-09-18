@@ -1,0 +1,9 @@
+{
+  "name": "eduguyane",
+  "version": "1.0.0",
+  "private": true,
+  "description": "EduGuyane — plateforme lycée (site statique + fonctions serverless Vercel)",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.127.0"
+  }
+}

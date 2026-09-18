@@ -7,6 +7,10 @@
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- KaTeX : rend les formules des profs IA. Optionnel — sans lui, le texte reste lisible. -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
 </head>
 <body>
 
@@ -28,6 +32,7 @@
         <nav class="nav" id="nav">
             <a href="#" class="nav-link active" data-view="accueil">Accueil</a>
             <a href="#" class="nav-link" data-view="cours">Cours</a>
+            <a href="#" class="nav-link" data-view="profs">Mes profs</a>
             <a href="#" class="nav-link" data-view="quiz">Quiz</a>
             <a href="#" class="nav-link" data-view="progression">Progression</a>
             <a href="#" class="nav-link" data-view="forum">Forum</a>
@@ -681,6 +686,11 @@
     <div class="sudoku-game hidden" id="sudoku-game"></div>
 </section>
 
+<!-- ============ VUE : MES PROFS (professeurs IA) ============ -->
+<section class="view" id="view-profs">
+    <!-- Rendu dynamique par profs.js → renderProfs() -->
+</section>
+
 <!-- ============ VUE : MATIÈRES ============ -->
 <section class="view" id="view-matieres">
     <!-- Rendu dynamique par matieres.js → renderMatieres() -->
@@ -736,6 +746,10 @@
 <script src="exercises.js"></script>
 <script src="data-matieres.js"></script>
 <script src="matieres.js"></script>
+<!-- Professeurs IA : config centrale → couche d'appel → interface -->
+<script src="agents-config.js"></script>
+<script src="ai-core.js"></script>
+<script src="profs.js"></script>
 <script src="script.js"></script>
 <script src="ai-tutor.js"></script>
 </body>

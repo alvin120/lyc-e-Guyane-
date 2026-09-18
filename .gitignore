@@ -2,3 +2,9 @@
 Thumbs.db
 desktop.ini
 *.log
+
+# Dépendances & secrets
+node_modules/
+.env
+.env.local
+.vercel

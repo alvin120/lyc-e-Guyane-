@@ -15,7 +15,7 @@ let forumFilter = "all";
 let selectedAvatar = "🎓";
 let currentLesson = null; // leçon ouverte — lue par le Professeur IA
 let _suppressHashPush = false;
-const _VALID_VIEWS = ['accueil','cours','quiz','exercices','progression','forum','matieres','espaces','profil','admin'];
+const _VALID_VIEWS = ['accueil','cours','profs','quiz','exercices','progression','forum','matieres','espaces','profil','admin'];
 
 const state = {
     quizDone: {},
@@ -83,8 +83,10 @@ function navigateTo(view) {
     window.scrollTo({ top: 0, behavior: "smooth" });
     closeUserDropdown();
     closeNav();
+    document.body.classList.remove("prof-chat-open"); // réaffiche le widget 🤖 hors conversation
 
     if (view === "cours")          renderCoursList();
+    if (view === "profs")          renderProfs();
     if (view === "quiz")           renderQuizGrid();
     if (view === "progression")    renderProgression();
     if (view === "forum")          renderForum();
@@ -1342,6 +1344,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (hash.startsWith('cours/')) {
             navigateTo('cours');
             openLesson(hash.slice(6));
+        } else if (hash.startsWith('profs/')) {
+            navigateTo('profs');
+            openProfChat(hash.slice(6));
         } else if (_VALID_VIEWS.includes(hash)) {
             navigateTo(hash);
         } else {
@@ -1357,6 +1362,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (_initHash.startsWith('cours/')) {
             navigateTo('cours');
             openLesson(_initHash.slice(6));
+        } else if (_initHash.startsWith('profs/')) {
+            navigateTo('profs');
+            openProfChat(_initHash.slice(6));
         } else if (_VALID_VIEWS.includes(_initHash)) {
             navigateTo(_initHash);
         }
