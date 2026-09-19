@@ -25,7 +25,10 @@ const CLAUDE_MODEL = 'claude-opus-5';        // ← modèle des profs (voir READ
 // Groq retire régulièrement ses modèles (llama-3.1-8b-instant a disparu et
 // renvoie désormais un 404). On demande donc la liste à Groq et on prend le
 // premier modèle disponible dans cet ordre de préférence.
-const GROQ_PREFERENCES = ['llama-3.3-70b', 'llama-3.1-8b', 'llama-4', 'llama-3', 'mixtral', 'gemma'];
+const GROQ_PREFERENCES = [
+    'llama-3.3-70b', 'gpt-oss-120b', 'llama-4', 'llama-3.1-8b',
+    'gpt-oss', 'llama-3', 'mixtral', 'gemma'
+];
 const MAX_HISTORY  = 24;                     // nombre de messages d'historique conservés
 const MAX_CHARS    = 6000;                   // taille max d'un message élève (photo décrite, devoir collé…)
 
@@ -156,10 +159,13 @@ async function resolveGroqModel(key) {
 
     for (const pref of GROQ_PREFERENCES) {
         const trouve = conversationnels.find(id => id.includes(pref));
-        if (trouve) { _groqModel = trouve; return trouve; }
+        if (trouve) { _groqModel = trouve; break; }
     }
-    if (!conversationnels.length) throw new Error('Groq : aucun modèle conversationnel disponible');
-    _groqModel = conversationnels[0];
+    if (!_groqModel) {
+        if (!conversationnels.length) throw new Error('Groq : aucun modèle conversationnel disponible');
+        _groqModel = conversationnels[0];
+    }
+    console.log('[tutor] modèle Groq retenu :', _groqModel);
     return _groqModel;
 }
 
