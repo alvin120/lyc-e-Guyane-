@@ -192,6 +192,41 @@ async function deleteCustomCourse(id) {
     await _sb.from('custom_courses').delete().eq('id', id);
 }
 
+// ── Conversations avec les profs IA ────────────────────────
+// Une ligne par élève et par matière (clé primaire composée).
+// Utilisé par profs-store.js, qui gère aussi le repli localStorage.
+
+async function getAiConversation(userId, agentId) {
+    if (!userId) return null;
+    const { data, error } = await _sb
+        .from('ai_conversations')
+        .select('messages, updated_at')
+        .eq('user_id', userId)
+        .eq('agent_id', agentId)
+        .maybeSingle();
+    if (error) throw error;
+    return data ? { messages: data.messages || [], updatedAt: data.updated_at } : null;
+}
+
+async function saveAiConversation(userId, agentId, messages) {
+    if (!userId) return;
+    const { error } = await _sb.from('ai_conversations').upsert({
+        user_id: userId,
+        agent_id: agentId,
+        messages,
+        updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id,agent_id' });
+    if (error) throw error;
+}
+
+async function deleteAiConversation(userId, agentId) {
+    if (!userId) return;
+    await _sb.from('ai_conversations')
+        .delete()
+        .eq('user_id', userId)
+        .eq('agent_id', agentId);
+}
+
 // ── Exercices personnalisés (admin) ────────────────────────
 async function getCustomExercises() {
     const { data } = await _sb.from('custom_exercises').select('data').order('created_at');

@@ -14,10 +14,13 @@ function renderProfs() {
     profAgent = null; // on revient à la liste : plus de conversation ouverte
     document.body.classList.remove("prof-chat-open");
 
+    // Matières où une conversation est déjà commencée → bouton « Reprendre ».
+    const enCours = ProfStore.listActive();
+
     view.innerHTML = `
         ${buildProfsHero()}
         <div class="prof-grid" id="prof-grid">
-            ${AGENTS.map(buildProfCard).join("")}
+            ${AGENTS.map(a => buildProfCard(a, enCours[a.id])).join("")}
         </div>
         ${buildProfsFooterNote()}
     `;
@@ -52,11 +55,19 @@ function buildProfsHero() {
 }
 
 // ---- CARTE D'UN PROF ----
-/** @param {Object} agent  un objet du tableau AGENTS */
-function buildProfCard(agent) {
+/**
+ * @param {Object} agent      un objet du tableau AGENTS
+ * @param {number} [nbMsgs]   nombre de messages déjà échangés, s'il y en a
+ */
+function buildProfCard(agent, nbMsgs) {
     const puces = agent.bullets
         .map(b => `<li>${escapeProf(b)}</li>`)
         .join("");
+
+    const reprise = nbMsgs > 0;
+    const libelle = reprise
+        ? `Reprendre avec ${escapeProf(agent.name)} →`
+        : `Discuter avec ${escapeProf(agent.name)} →`;
 
     return `
     <article class="prof-card reveal"
@@ -81,11 +92,12 @@ function buildProfCard(agent) {
 
         <div class="prof-meta">
             <span class="prof-chip">🎓 ${escapeProf(agent.levels)}</span>
+            ${reprise ? `<span class="prof-chip prof-chip-reprise">💬 ${nbMsgs} message${nbMsgs > 1 ? "s" : ""}</span>` : ""}
         </div>
 
         <button type="button" class="prof-cta" data-agent="${agent.id}"
-                aria-label="Discuter avec ${escapeProf(agent.name)}, professeur de ${escapeProf(agent.subject)}">
-            Discuter avec ${escapeProf(agent.name)} →
+                aria-label="${reprise ? "Reprendre la conversation avec" : "Discuter avec"} ${escapeProf(agent.name)}, professeur de ${escapeProf(agent.subject)}">
+            ${libelle}
         </button>
     </article>`;
 }
@@ -119,8 +131,17 @@ function openProfChat(agentId) {
     const agent = AgentsConfig.getAgent(agentId);
     if (!agent) return;
 
-    // Changer de prof repart d'une conversation vierge (la persistance arrive à l'étape 4).
-    if (!profAgent || profAgent.id !== agent.id) profMessages = [];
+    // On recharge la conversation sauvegardée pour cette matière.
+    if (!profAgent || profAgent.id !== agent.id) {
+        profMessages = ProfStore.load(agent.id, messagesDistants => {
+            // Une version plus récente est arrivée d'un autre appareil.
+            if (profAgent && profAgent.id === agent.id && !profBusy) {
+                profMessages = messagesDistants;
+                renderProfMessages();
+                showToast("Conversation récupérée depuis un autre appareil.", "info");
+            }
+        });
+    }
     profAgent = agent;
 
     renderProfChat();
@@ -267,6 +288,7 @@ function sendProfMessage(texte) {
             profMessages.push({ role: "assistant", content: text });
             renderProfMessages();
             majEtatEnvoi();
+            ProfStore.save(profAgent.id, profMessages);
             if (degraded) {
                 showToast("Réponse fournie par le professeur de secours (service principal indisponible).", "info");
             }
@@ -279,6 +301,8 @@ function sendProfMessage(texte) {
             profMessages.push({ role: "assistant", content: message, error: true });
             renderProfMessages();
             majEtatEnvoi();
+            // Les bulles d'erreur ne sont pas sauvegardées (filtrées par ProfStore).
+            ProfStore.save(profAgent.id, profMessages);
         }
     });
 }
@@ -304,9 +328,11 @@ function bindProfChat() {
     document.getElementById("chat-back")?.addEventListener("click", closeProfChat);
 
     document.getElementById("chat-clear")?.addEventListener("click", () => {
+        if (profMessages.length && !confirm("Effacer toute la conversation avec " + profAgent.name + " ?")) return;
         AiCore.abort();
         profBusy = false;
         profMessages = [];
+        ProfStore.clear(profAgent.id);
         renderProfMessages();
         majEtatEnvoi();
         showToast("Conversation effacée.", "info");

@@ -2769,3 +2769,10 @@ blockquote { border-left-color: #2563eb !important; background: #eff6ff !importa
    deux boutons IA concurrents, et il recouvre le bouton d'envoi sur mobile. */
 body.prof-chat-open .ai-tutor-btn,
 body.prof-chat-open .ai-tutor-panel { display: none !important; }
+
+/* Pastille « conversation en cours » sur une carte de prof */
+.prof-chip-reprise {
+    background: var(--accent-soft);
+    color: var(--accent-deep);
+    margin-left: 6px;
+}
