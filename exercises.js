@@ -114,7 +114,9 @@ const EXERCISES = [
 // MERGE BUILT-IN + CUSTOM
 // ============================================================
 function getAllExercises() {
-    return [...EXERCISES, ...getCustomExercises()];
+    // _customExercises = cache chargé par script.js (getCustomExercises est asynchrone)
+    const perso = typeof _customExercises !== "undefined" && Array.isArray(_customExercises) ? _customExercises : [];
+    return [...EXERCISES, ...perso];
 }
 
 // ============================================================
@@ -351,6 +353,7 @@ function renderExercicesList() {
     home.querySelectorAll("[data-eid]").forEach(btn =>
         btn.addEventListener("click", () => startExercice(btn.dataset.eid))
     );
+    if (typeof Epreuves !== "undefined") Epreuves.exoListe(); // étoiles déjà gagnées
 
     // Bouton admin "Ajouter un exercice" visible uniquement pour l'admin
     const addBtn = document.getElementById("btn-add-exo-sidebar");
@@ -364,7 +367,7 @@ function renderExercicesList() {
 // DÉMARRER
 // ============================================================
 function startExercice(id) {
-    exoCurrent  = EXERCISES.find(e => e.id === id);
+    exoCurrent  = getAllExercises().find(e => e.id === id);
     if (!exoCurrent) return;
     exoAnswers  = {};
     exoSelected = null;
@@ -417,6 +420,7 @@ function startExercice(id) {
         if (btn) placeExoValue(btn.dataset.val);
     });
     document.getElementById("exo-check").addEventListener("click", checkExo);
+    if (typeof Epreuves !== "undefined") Epreuves.exoDebut(); // barre d'avancement
 }
 
 // ============================================================
@@ -615,6 +619,7 @@ function placeExoValue(value) {
         wrap.style.opacity = "0.72";
         setTimeout(() => { wrap.style.opacity = "1"; }, 130);
     }
+    if (typeof Epreuves !== "undefined") Epreuves.exoMaj();
 }
 
 function checkExo() {
@@ -641,6 +646,7 @@ function checkExo() {
 
     const pct  = Math.round((correct / total) * 100);
     const hint = document.getElementById("exo-hint");
+    if (typeof Epreuves !== "undefined") Epreuves.exoVerifie(correct, total); // étoiles + XP
 
     if (correct === total) {
         if (hint) hint.innerHTML = `<span class="su-success">🏆 Parfait ! ${correct}/${total} — Bravo !</span>`;

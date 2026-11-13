@@ -38,11 +38,13 @@ async function loadState() {
     const user = getCurrentUser();
     const saved = await getUserProgress(user ? user.id : null);
     Object.assign(state, saved);
+    if (typeof Jeu !== "undefined") Jeu.synchroniser(); // recale niveau et XP sans animation
 }
 
 function saveState() {
     const user = getCurrentUser();
     saveUserProgress(user ? user.id : null, state); // fire-and-forget
+    if (typeof Jeu !== "undefined") Jeu.surProgression(); // affiche les XP gagnés
 }
 
 function resetState() {
@@ -353,12 +355,20 @@ function openLesson(id) {
     const lesson = getAllCourses().find(c => c.id === id);
     if (!lesson) return;
     currentLesson = lesson;
-    state.lessonsRead[lesson.id] = true;
-    saveState();
     document.getElementById("cours-list").classList.add("hidden");
     const detail = document.getElementById("lesson-detail");
     detail.classList.remove("hidden");
-    document.getElementById("lesson-content").innerHTML = getLessonVideoHtml(lesson) + lesson.content;
+    const contenu = document.getElementById("lesson-content");
+    contenu.innerHTML = getLessonVideoHtml(lesson) + lesson.content;
+
+    // Mode parcours : la leçon n'est comptée comme lue qu'à la dernière étape.
+    // Sans parcours (leçon sans sous-titres), elle est lue dès l'ouverture, comme avant.
+    const marquerLue = () => { state.lessonsRead[lesson.id] = true; saveState(); };
+    const enParcours = typeof Parcours !== "undefined" && Parcours.monter(contenu, lesson, {
+        dejaLue: !!state.lessonsRead[lesson.id],
+        terminer: marquerLue,
+    });
+    if (!enParcours) marquerLue();
     if (!_suppressHashPush) history.pushState(null, '', '#cours/' + lesson.id);
 }
 
@@ -405,6 +415,7 @@ function startQuiz(id) {
     document.getElementById("quiz-home").classList.add("hidden");
     document.getElementById("quiz-result").classList.add("hidden");
     document.getElementById("quiz-runner").classList.remove("hidden");
+    if (typeof Epreuves !== "undefined") Epreuves.quizDebut();
     renderQuestion();
 }
 
@@ -442,6 +453,7 @@ function renderQuestion() {
     opts.querySelectorAll(".quiz-opt").forEach(btn => {
         btn.addEventListener("click", () => answerQuestion(parseInt(btn.dataset.idx)));
     });
+    if (typeof Epreuves !== "undefined") Epreuves.quizQuestion(); // bascule 3D + lettres A, B, C…
 }
 
 function answerQuestion(chosen) {
@@ -472,6 +484,7 @@ function answerQuestion(chosen) {
     const nextBtn = document.getElementById("quiz-next");
     nextBtn.style.display = "block";
     nextBtn.textContent = currentQuestion + 1 < currentQuiz.questions.length ? "Question suivante →" : "Voir les résultats";
+    if (typeof Epreuves !== "undefined") Epreuves.quizReponse(correct); // série de bonnes réponses
 }
 
 function nextQuestion() {
@@ -511,6 +524,7 @@ function showQuizResult() {
         const a = quizAnswers[i];
         return `<div class="rd-item ${a.correct ? "rd-ok" : "rd-ko"}">${a.correct ? "✅" : "❌"} ${q.q}</div>`;
     }).join("");
+    if (typeof Epreuves !== "undefined") Epreuves.quizFin(); // meilleure série
 }
 
 // ============================================================
@@ -1043,7 +1057,7 @@ function openExoModal(id) {
     buildExoRowsUI([]);
 
     if (id) {
-        const exo = getCustomExercises().find(e => e.id === id);
+        const exo = _customExercises.find(e => e.id === id);
         if (!exo) return;
         document.getElementById("em-id").value       = exo.id;
         document.getElementById("em-subject").value  = exo.subject;
